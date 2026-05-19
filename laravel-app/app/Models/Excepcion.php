@@ -8,20 +8,20 @@ class Excepcion extends Model
 {
     protected $table = 'excepciones';
 
-    protected $primaryKey = 'excepcionId';
+    protected $primaryKey = 'excepcion_id';
     public $timestamps = false;
 
     protected $fillable = [
-        'profesionalId',
+        'profesional_id', 
         'fecha',      
-        'horaInicio', 
-        'horaFin',    
+        'hora_inicio', 
+        'hora_fin',    
         'motivo' 
     ];
 
     //Una excepción pertenece a un profesional.
     public function profesional()
     {
-        return $this->belongsTo(Profesional::class, 'profesionalId');
+        return $this->belongsTo(Profesional::class, 'profesional_id');
     }
 }

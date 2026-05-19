@@ -8,18 +8,18 @@ class Calificacion extends Model
 {
     protected $table = 'calificaciones';
 
-    protected $primaryKey = 'calificacionId';
+    protected $primaryKey = 'calificacion_id';
     public $timestamps = true;
 
     protected $fillable = [
-        'reservaId',
-        'puntaje',
+        'reserva_id',
+        'puntuacion',
         'comentario'
     ];
 
     //Una calificación pertenece a una reserva específica.
     public function reserva()
     {
-        return $this->belongsTo(Reserva::class, 'reservaId');
+        return $this->belongsTo(Reserva::class, 'reserva_id');
     }
 }

@@ -8,24 +8,24 @@ class ItemPaquete extends Model
 {
     protected $table = 'item_paquetes';
 
-    protected $primaryKey = 'itemPaqueteId';
+    protected $primaryKey = 'item_paquete_id';
     public $timestamps = false;
 
     protected $fillable = [
-        'servicioId',
-        'paqueteId',      
-        'cantidadSesiones'
+        'servicio_id',
+        'paquete_id',      
+        'cantidad_sesiones'
     ];
 
     //Un item de paquete pertenece a un servicio.
     public function servicio()
     {
-        return $this->belongsTo(Servicio::class, 'servicioId');
+        return $this->belongsTo(Servicio::class, 'servicio_id');
     }
 
     //Un item de paquete pertenece a un paquete.
     public function paquete()
     {
-        return $this->belongsTo(Paquete::class, 'paqueteId');
+        return $this->belongsTo(Paquete::class, 'paquete_id');
     }
 }

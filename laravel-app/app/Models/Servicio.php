@@ -9,12 +9,12 @@ class Servicio extends Model
 {
     protected $table = 'servicios';
 
-    protected $primaryKey = 'servicioId';
+    protected $primaryKey = 'servicio_id';
 
     public $timestamps = false;
 
     protected $fillable = [
-        'profesionalId',
+        'profesional_id',
         'nombre',
         'descripcion',
         'tipo',
@@ -27,23 +27,23 @@ class Servicio extends Model
     // un servicio pertenece a un profesional
     public function profesional()
     {
-        return $this->belongsTo(Profesional::class, 'profesionalId');
+        return $this->belongsTo(Profesional::class, 'profesional_id');
     }
 
     // un servicio tiene muchas disponibilidades
     public function disponibilidades()
     {
-        return $this->hasMany(Disponibilidad::class, 'servicioId');
+        return $this->hasMany(Disponibilidad::class, 'servicio_id');
     }
 
     // un servicio puede estar en muchos ítems de paquetes
     public function itemPaquetes()
     {
-        return $this->hasMany(ItemPaquete::class, 'servicioId');
+        return $this->hasMany(ItemPaquete::class, 'servicio_id');
     }
 
     public function reservas()
 {
-    return $this->hasMany(Reserva::class, 'servicioId');
+    return $this->hasMany(Reserva::class, 'servicio_id');
 }
 }

@@ -34,13 +34,13 @@ class User extends Authenticatable
     //Un Usuario puede tener un perfil de Profesional.
     public function profesional()
     {
-        return $this->hasOne(Profesional::class, 'profesionalId', 'id');
+        return $this->hasOne(Profesional::class, 'profesional_id', 'id');
     }
 
     //Un Usuario puede tener un perfil de Cliente.
     public function cliente()
     {
-        return $this->hasOne(Cliente::class, 'clienteId', 'id');
+        return $this->hasOne(Cliente::class, 'cliente_id', 'id');
     }
 
 }

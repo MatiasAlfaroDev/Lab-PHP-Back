@@ -8,19 +8,19 @@ class Disponibilidad extends Model
 {
     protected $table = 'disponibilidades';
 
-    protected $primaryKey = 'disponibilidadId';
+    protected $primaryKey = 'disponibilidad_id';
     public $timestamps = false;
 
     protected $fillable = [
-        'servicioId',
-        'diaSemana', 
-        'horaInicio',
-        'horaFin'
+        'servicio_id',
+        'dia_semana', 
+        'hora_inicio',
+        'hora_fin'
     ];
 
     // Una disponibilidad pertenece a un único servicio.
     public function servicio()
     {
-        return $this->belongsTo(Servicio::class, 'servicioId');
+        return $this->belongsTo(Servicio::class, 'servicio_id');
     }
 }

@@ -8,47 +8,46 @@ class Reserva extends Model
 {
     protected $table = 'reservas';
 
-    protected $primaryKey = 'reservaId';
+    protected $primaryKey = 'reserva_id';
 
     public $timestamps = false;
 
     protected $fillable = [
-        'clienteId',
-        'servicioId',
-        'paqueteId',
+        'cliente_id',
+        'servicio_id',
+        'compra_item_paquete_id',
         'fecha',
         'hora',
-        'estado',
-        'sesionesRestantes' //?
+        'estado'
     ];
 
-    // una reserva pertenece a un cliente
+    // Cliente dueño de la reserva
     public function cliente()
     {
-        return $this->belongsTo(Cliente::class, 'clienteId');
+        return $this->belongsTo(Cliente::class, 'cliente_id');
     }
 
-    // una reserva tiene un servicio
+    // Servicio reservado
     public function servicio()
     {
-        return $this->belongsTo(Servicio::class, 'servicioId');
+        return $this->belongsTo(Servicio::class, 'servicio_id');
     }
 
-    // una reserva puede ser de un paquete
-    public function paquete()
+    // Si viene de un paquete (nullable)
+    public function compraItemPaquete()
     {
-        return $this->belongsTo(Paquete::class, 'paqueteId');
+        return $this->belongsTo(CompraItemPaquete::class, 'compra_item_paquete_id');
     }
 
-    // una reserva tiene un pago
+    // Pago de la reserva
     public function pago()
     {
-        return $this->hasOne(Pago::class, 'reservaId');
+        return $this->hasOne(Pago::class, 'reserva_id');
     }
 
-    // una reserva puede tener una calificación
+    // Calificación
     public function calificacion()
     {
-        return $this->hasOne(Calificacion::class, 'reservaId');
+        return $this->hasOne(Calificacion::class, 'reserva_id');
     }
 }
