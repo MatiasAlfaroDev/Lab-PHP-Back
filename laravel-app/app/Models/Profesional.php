@@ -23,10 +23,10 @@ class Profesional extends Model
     ];
 
     //Relación inversa: Un profesional "es" un usuario. Vinculamos nuestro profesionalId con el id del User.
-    public function user()
-    {
-        return $this->belongsTo(User::class, 'user_id', 'id');
-    }
+    public function profesional()
+        {
+            return $this->hasOne(Profesional::class, 'user_id');
+        }
 
     //Un profesional tiene muchos servicios.
     public function servicios()

@@ -6,10 +6,15 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Database\Factories\UserFactory;
+use Laravel\Sanctum\HasApiTokens;
 
 class User extends Authenticatable
 {
-    use HasFactory, Notifiable;
+    use HasFactory, Notifiable, HasApiTokens;
+
+     protected $table = 'users';
+
+     protected $primaryKey = 'id';
 
     protected $fillable = [
         'nombre',
@@ -32,15 +37,15 @@ class User extends Authenticatable
     }
 
     //Un Usuario puede tener un perfil de Profesional.
-    public function profesional()
+   public function profesional()
     {
-        return $this->hasOne(Profesional::class, 'profesional_id', 'id');
+        return $this->hasOne(Profesional::class, 'user_id');
     }
 
     //Un Usuario puede tener un perfil de Cliente.
     public function cliente()
     {
-        return $this->hasOne(Cliente::class, 'cliente_id', 'id');
+        return $this->hasOne(Cliente::class, 'user_id');
     }
 
 }
