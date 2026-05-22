@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Services\UserService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
+use Laravel\Socialite\Facades\Socialite;
 
 class UserController extends Controller
 {
@@ -18,7 +19,7 @@ class UserController extends Controller
 
     public function register(Request $request)
     {
-        // 1. VALIDACIÓN (controlada para frontend)
+        // 1. VALIDACIÓN 
         $validator = Validator::make($request->all(), [
             'nombre' => 'required|string',
             'email' => 'required|email|unique:users,email',
@@ -36,14 +37,58 @@ class UserController extends Controller
             ], 422);
         }
 
-        // 2. LLAMAR SERVICE
         $result = $this->userService->register($request->all());
 
-        // 3. RESPUESTA FINAL
         if (!$result['success']) {
             return response()->json($result, 500);
         }
 
         return response()->json($result, 201);
+    }
+
+    public function login(Request $request)
+    {
+        $data = $request->validate([
+            'email' => 'required|email',
+            'password' => 'required'
+        ]);
+
+        $response = $this->userService->login($data);
+
+        return response()->json(
+            $response,
+            $response['success'] ? 200 : 401
+        );
+    }
+
+    public function me(Request $request)
+    {
+        return response()->json($request->user());
+    }
+
+    public function logout(Request $request)
+    {
+        $request->user()->currentAccessToken()->delete();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Logout correcto'
+        ]);
+    }
+
+    public function redirectGoogle(Request $request)
+{
+    return Socialite::driver('google')
+       // ->with(['state' => $request->rol]) para traer del front
+        ->redirect();
+}
+
+    public function googleCallback(Request $request)
+    {
+        $user = $this->userService->handleGoogleLogin($request->input('state'));
+        return response()->json([
+            'success' => true,
+            'data' => $user
+        ]);
     }
 }
