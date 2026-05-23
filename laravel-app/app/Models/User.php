@@ -17,10 +17,10 @@ class User extends Authenticatable
      protected $primaryKey = 'id';
 
     protected $fillable = [
-        'nombre',
+        'name',
         'email',
         'password',
-        'rol', // rol seria para 'admin' o 'usuario'
+        'role', // rol seria para 'admin' o 'usuario'
     ];
 
     protected $hidden = [

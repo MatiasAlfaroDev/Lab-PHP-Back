@@ -19,14 +19,14 @@ class UserService
 
             // Crear usuario
             $user = User::create([
-                'nombre' => $data['nombre'],
+                'name' => $data['name'],
                 'email' => $data['email'],
-                'rol' => strtolower($data['rol']),
+                'role' => strtolower($data['role']),
                 'password' => Hash::make($data['password'])
             ]);
 
             // Crear perfil según rol
-            if ($user->rol === 'profesional') {
+            if ($user->role === 'professional') {
                 Profesional::create([
                     'user_id' => $user->id,
                     'descripcion' => '',
@@ -34,7 +34,7 @@ class UserService
                 ]);
             }
 
-            if ($user->rol === 'cliente') {
+            if ($user->role === 'client') {
                 Cliente::create([
                     'user_id' => $user->id
                 ]);
@@ -43,14 +43,17 @@ class UserService
             DB::commit();
 
             // Respuesta para frontend
+           $token = $user->createToken('auth_token')->plainTextToken;
+
             return [
                 'success' => true,
                 'message' => 'Usuario creado correctamente',
-                'data' => [
+                'token' => $token,
+                'user' => [
                     'id' => $user->id,
-                    'nombre' => $user->nombre,
+                    'name' => $user->name,
                     'email' => $user->email,
-                    'rol' => $user->rol
+                    'role' => $user->role
                 ]
             ];
 
@@ -82,17 +85,18 @@ class UserService
         return [
             'success' => true,
             'message' => 'Login correcto',
-            'data' => [
+            'token' => $token,
+            'user' => [
                 'id' => $user->id,
-                'nombre' => $user->nombre,
+                'name' => $user->name,
                 'email' => $user->email,
-                'rol' => $user->rol,
-                'token' => $token
+                'role' => $user->role
             ]
+            
         ];
     }
 
-    public function handleGoogleLogin($rol)
+    public function handleGoogleLogin($role)
     {
         $googleUser = Socialite::driver('google')->stateless()->user();
 
@@ -100,12 +104,13 @@ class UserService
 
         if (!$user) {
             $user = User::create([
-                'nombre' => $googleUser->name,
+                'name' => $googleUser->name,
                 'email' => $googleUser->email,
-                'rol' => $rol
+                'role' => $role,
+                'password' => bcrypt(uniqid())
             ]);
 
-            if ($rol === 'profesional') {
+            if ($role === 'professional') {
                 Profesional::create(['user_id' => $user->id]);
             } else {
                 Cliente::create(['user_id' => $user->id]);

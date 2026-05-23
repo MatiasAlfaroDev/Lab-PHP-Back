@@ -21,10 +21,10 @@ class UserController extends Controller
     {
         // 1. VALIDACIÓN 
         $validator = Validator::make($request->all(), [
-            'nombre' => 'required|string',
+            'name' => 'required|string',
             'email' => 'required|email|unique:users,email',
-            'password' => 'required|min:6',
-            'rol' => 'required|in:cliente,profesional,admin'
+            'password' => 'required|min:8',
+            'role' => 'required|in:client,professional,admin'
         ], [
             'email.unique' => 'El email ya está registrado'
         ]);
@@ -79,16 +79,23 @@ class UserController extends Controller
     public function redirectGoogle(Request $request)
 {
     return Socialite::driver('google')
-       // ->with(['state' => $request->rol]) para traer del front
+        ->with(['state' => $request->role]) 
         ->redirect();
 }
 
     public function googleCallback(Request $request)
     {
-        $user = $this->userService->handleGoogleLogin($request->input('state'));
-        return response()->json([
-            'success' => true,
-            'data' => $user
-        ]);
+        $response = $this->userService->handleGoogleLogin($request->input('state'));
+
+        return redirect(
+            'http://localhost:5173/auth/google/callback?' .
+            http_build_query([
+                'token' => $response['token'],
+                'id' => $response['user']->id,
+                'name' => $response['user']->name,
+                'email' => $response['user']->email,
+                'role' => $response['user']->role,
+            ])
+        );
     }
 }
