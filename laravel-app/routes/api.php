@@ -3,6 +3,7 @@
 use Illuminate\Support\Facades\Route;
 
 use App\Http\Controllers\Api\UserController;
+use App\Http\Controllers\Api\ServicioController;
 /*use App\Http\Controllers\Api\ServicioController;
 use App\Http\Controllers\ReservaController;
 use App\Http\Controllers\PagoController;
@@ -38,7 +39,10 @@ Route::middleware('auth:sanctum')->group(function () {
     | Servicios (Profesionales)
     |------------------------------------------
     */
-    //Route::apiResource('servicios', ServicioController::class);
+    Route::apiResource('servicios', ServicioController::class);
+     Route::post('/servicios', [ServicioController::class, 'store']);
+
+    Route::get('/mis-servicios', [ServicioController::class, 'misServicios']);
 
     /*
     |------------------------------------------
