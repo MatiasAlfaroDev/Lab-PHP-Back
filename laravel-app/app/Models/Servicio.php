@@ -43,7 +43,17 @@ class Servicio extends Model
     }
 
     public function reservas()
-{
-    return $this->hasMany(Reserva::class, 'servicio_id');
-}
+    {
+        return $this->hasMany(Reserva::class, 'servicio_id');
+    }
+
+    public function paquetes() // un servicio puede pertenecer a muchos paquetes a través de item_paquetes, asi se accede directo de servicio a paquete sin pasar por item_paquete
+    {
+        return $this->belongsToMany(
+            Paquete::class,
+            'item_paquetes',
+            'servicio_id',
+            'paquete_id'
+        )->withPivot('cantidad_sesiones');
+    }
 }

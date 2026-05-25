@@ -5,6 +5,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\UserController;
 use App\Http\Controllers\Api\ServicioController;
 use App\Http\Controllers\Api\PagoController;
+use App\Http\Controllers\Api\PaqueteController;
 use App\Http\Controllers\Api\ProfesionalController;
 use App\Http\Controllers\Api\DisponibilidadController;
 
@@ -82,6 +83,6 @@ Route::middleware('auth:sanctum')->group(function () {
     | Paquetes de sesiones
     |------------------------------------------
     */
-    //Route::apiResource('paquetes', PaqueteController::class);
+    Route::apiResource('paquetes', PaqueteController::class);
 
 });
