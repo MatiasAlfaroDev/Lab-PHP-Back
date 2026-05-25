@@ -28,4 +28,5 @@ class ItemPaquete extends Model
     {
         return $this->belongsTo(Paquete::class, 'paquete_id');
     }
+
 }
