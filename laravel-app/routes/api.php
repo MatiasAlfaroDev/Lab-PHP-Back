@@ -6,6 +6,7 @@ use App\Http\Controllers\Api\UserController;
 use App\Http\Controllers\Api\ServicioController;
 use App\Http\Controllers\Api\PagoController;
 use App\Http\Controllers\Api\ProfesionalController;
+use App\Http\Controllers\Api\DisponibilidadController;
 
 /*
 |--------------------------------------------------------------------------
@@ -21,6 +22,11 @@ Route::get('/servicios', [ServicioController::class, 'index']);
 
 // Perfil público de profesional
 Route::get('/profesionales/{id}', [ProfesionalController::class, 'show']);
+
+// Disponibilidad (público)
+Route::get('/servicios/{id}/dias-disponibles', [DisponibilidadController::class, 'diasDisponibles']);
+Route::get('/servicios/{id}/disponibilidad',   [DisponibilidadController::class, 'byServicio']);
+Route::get('/servicios/{id}/slots',            [DisponibilidadController::class, 'slots']);
 
 // Callbacks de PayPal (llamados directamente por PayPal, sin token)
 Route::get('/pagos/reserva/capturar', [PagoController::class, 'capturarReserva']);
@@ -52,6 +58,9 @@ Route::middleware('auth:sanctum')->group(function () {
      Route::post('/servicios', [ServicioController::class, 'store']);
 
     Route::get('/mis-servicios', [ServicioController::class, 'misServicios']);
+
+    // Disponibilidad (protegido)
+    Route::put('/servicios/{id}/disponibilidad', [DisponibilidadController::class, 'bulkUpdate']);
 
     /*
     |------------------------------------------
