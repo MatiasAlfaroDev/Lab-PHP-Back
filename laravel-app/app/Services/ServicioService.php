@@ -7,6 +7,14 @@ use App\Models\Profesional;
 
 class ServicioService
 {
+    public function listarTodos()
+    {
+        return [
+            'success' => true,
+            'data' => Servicio::with('profesional')->get()
+        ];
+    }
+
     public function nuevoServicio(array $data, $user)
     {
         // Verificar que el usuario sea professional

@@ -17,7 +17,9 @@ class Pago extends Model
         'compra_paquete_id',
         'fecha',
         'monto',
-        'estado'
+        'estado',
+        'paypal_order_id',
+        'paypal_capture_id',
     ];
 
     //Un pago pertenece a una reserva.

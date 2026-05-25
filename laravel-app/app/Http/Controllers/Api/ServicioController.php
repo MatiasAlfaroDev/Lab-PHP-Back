@@ -16,6 +16,12 @@ class ServicioController extends Controller
         $this->servicioService = $servicioService;
     }
 
+    // Listar todos los servicios (público)
+    public function index()
+    {
+        return response()->json($this->servicioService->listarTodos());
+    }
+
     // Crear nuevo servicio
     public function store(Request $request)
     {
