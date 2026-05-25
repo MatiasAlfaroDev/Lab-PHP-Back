@@ -5,6 +5,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\UserController;
 use App\Http\Controllers\Api\ServicioController;
 use App\Http\Controllers\Api\PagoController;
+use App\Http\Controllers\Api\ProfesionalController;
 
 /*
 |--------------------------------------------------------------------------
@@ -17,6 +18,9 @@ Route::post('/login', [UserController::class, 'login']);
 
 // Servicios (público para el front)
 Route::get('/servicios', [ServicioController::class, 'index']);
+
+// Perfil público de profesional
+Route::get('/profesionales/{id}', [ProfesionalController::class, 'show']);
 
 // Callbacks de PayPal (llamados directamente por PayPal, sin token)
 Route::get('/pagos/reserva/capturar', [PagoController::class, 'capturarReserva']);
