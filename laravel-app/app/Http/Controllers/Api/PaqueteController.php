@@ -24,6 +24,8 @@ class PaqueteController extends Controller
 
             'descripcion' => 'nullable|string',
 
+            'precio_total' => 'required|numeric|min:0',
+
             'servicios' => 'required|array|min:1',
 
             'servicios.*.servicio_id' => 'required|integer',
@@ -42,7 +44,7 @@ class PaqueteController extends Controller
         }
 
         $response = $this->paqueteService
-            ->crearPaquete($request->all());
+            ->crearPaquete($request->all(), $request->user());
 
         return response()->json(
             $response,
@@ -70,6 +72,44 @@ class PaqueteController extends Controller
         }
 
         return response()->json($paquete);
+    }
+
+    public function update(Request $request, $id)
+    {
+        $validator = Validator::make($request->all(), [
+
+            'nombre' => 'required|string|max:255',
+
+            'descripcion' => 'nullable|string',
+
+            'precio_total' => 'required|numeric|min:0',
+
+            'servicios' => 'required|array|min:1',
+
+            'servicios.*.servicio_id' => 'required|integer',
+
+            'servicios.*.cantidad_sesiones' =>
+                'required|integer|min:1'
+        ]);
+
+        if ($validator->fails()) {
+
+            return response()->json([
+                'success' => false,
+                'errors' => $validator->errors()
+            ], 422);
+        }
+
+        $response = $this->paqueteService
+            ->actualizarPaquete(
+                $id,
+                $request->all()
+            );
+
+        return response()->json(
+            $response,
+            $response['success'] ? 200 : 404
+        );
     }
 
     public function destroy($id)
