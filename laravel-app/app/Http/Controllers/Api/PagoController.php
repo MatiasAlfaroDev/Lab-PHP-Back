@@ -24,7 +24,7 @@ class PagoController extends Controller
     {
         $reserva = Reserva::with('servicio')->findOrFail($reserva_id);
 
-        if ($reserva->cliente_id !== $request->user()->cliente?->cliente_id) {
+        if ((int) $reserva->cliente_id !== (int) $request->user()->id) {
             return response()->json(['message' => 'No autorizado'], 403);
         }
 
@@ -70,6 +70,29 @@ class PagoController extends Controller
         return response()->json(['approval_url' => $approvalUrl, 'paypal_order_id' => $order['id']]);
     }
 
+    // POST /pagos/reserva/{reserva_id}/capturar  (llamado desde el SDK de PayPal)
+    public function capturarReservaSDK(Request $request, $reserva_id)
+    {
+        $orderId = $request->input('paypal_order_id');
+        $pago    = Pago::where('reserva_id', $reserva_id)
+                       ->where('paypal_order_id', $orderId)
+                       ->firstOrFail();
+
+        $paypal = $this->paypal();
+        $result = $paypal->capturePaymentOrder($orderId);
+
+        if (isset($result['error']) || ($result['status'] ?? '') !== 'COMPLETED') {
+            $pago->update(['estado' => 'fallido']);
+            return response()->json(['success' => false, 'message' => 'Pago fallido'], 400);
+        }
+
+        $captureId = $result['purchase_units'][0]['payments']['captures'][0]['id'] ?? null;
+        $pago->update(['estado' => 'aprobado', 'paypal_capture_id' => $captureId]);
+        Reserva::where('reserva_id', $reserva_id)->update(['estado' => 'pagada']);
+
+        return response()->json(['success' => true]);
+    }
+
     // GET /pagos/reserva/capturar?token=ORDER_ID
     public function capturarReserva(Request $request)
     {
@@ -91,6 +114,10 @@ class PagoController extends Controller
             'estado' => 'aprobado',
             'paypal_capture_id' => $captureId,
         ]);
+
+        if ($pago->reserva_id) {
+            Reserva::where('reserva_id', $pago->reserva_id)->update(['estado' => 'pagada']);
+        }
 
         return response()->json(['message' => 'Pago aprobado', 'pago_id' => $pago->pago_id]);
     }
