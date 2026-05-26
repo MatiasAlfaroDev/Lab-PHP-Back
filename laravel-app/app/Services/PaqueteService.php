@@ -9,7 +9,7 @@ use Illuminate\Support\Facades\DB;
 
 class PaqueteService
 {
-    public function crearPaquete(array $data)
+    public function crearPaquete(array $data, $user)
     {
         DB::beginTransaction();
 
@@ -18,18 +18,25 @@ class PaqueteService
             $paquete = Paquete::create([
                 'nombre' => $data['nombre'],
                 'descripcion' => $data['descripcion'],
-                'precio_total' => 0
+                'precio_total' => $data['precio_total']
             ]);
 
-            $total = 0;
 
             foreach ($data['servicios'] as $item) {
 
                 $servicio = Servicio::find($item['servicio_id']);
 
                 if (!$servicio) {
+
                     throw new \Exception(
                         'Servicio con ID ' . $item['servicio_id'] . ' no encontrado'
+                    );
+                }
+
+                if ($servicio->profesional_id != $user->id) {
+
+                    throw new \Exception(
+                        'No podés usar servicios de otro profesional'
                     );
                 }
 
@@ -39,12 +46,7 @@ class PaqueteService
                     'cantidad_sesiones' => $item['cantidad_sesiones']
                 ]);
 
-                $total += $servicio->precio * $item['cantidad_sesiones'];
             }
-
-            // Actualizar el precio total del paquete
-            $paquete->precio_total = $total;
-            $paquete->save();
 
             DB::commit();
 
@@ -73,6 +75,63 @@ class PaqueteService
     {
         return Paquete::with('servicios')
             ->find($id);
+    }
+
+    public function actualizarPaquete($id, array $data)
+    {
+        DB::beginTransaction();
+
+        try {
+
+            $paquete = Paquete::find($id);
+
+            if (!$paquete) {
+
+                return [
+                    'success' => false,
+                    'message' => 'Paquete no encontrado'
+                ];
+            }
+
+            $paquete->update([
+                'nombre' => $data['nombre'],
+                'descripcion' => $data['descripcion'],
+                'precio_total' => $data['precio_total']
+            ]);
+
+            // borrar items viejos
+            ItemPaquete::where(
+                'paquete_id',
+                $id
+            )->delete();
+
+            // crear nuevos
+            foreach ($data['servicios'] as $item) {
+
+                ItemPaquete::create([
+                    'paquete_id' => $id,
+                    'servicio_id' => $item['servicio_id'],
+                    'cantidad_sesiones' =>
+                        $item['cantidad_sesiones']
+                ]);
+            }
+
+            DB::commit();
+
+            return [
+                'success' => true,
+                'message' => 'Paquete actualizado'
+            ];
+
+        } catch (\Exception $e) {
+
+            DB::rollBack();
+
+            return [
+                'success' => false,
+                'message' => $e->getMessage()
+            ];
+        }
     }
 
     public function eliminarPaquete($id)
