@@ -18,6 +18,7 @@ class Pago extends Model
         'fecha',
         'monto',
         'estado',
+        'metodo',
         'paypal_order_id',
         'paypal_capture_id',
     ];

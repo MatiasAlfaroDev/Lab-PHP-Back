@@ -91,10 +91,13 @@ Route::middleware('auth:sanctum')->group(function () {
     | Pagos (PayPal)
     |------------------------------------------
     */
-    Route::post('/pagos/reserva/{reserva_id}/iniciar',   [PagoController::class, 'iniciarReserva']);
-    Route::post('/pagos/reserva/{reserva_id}/capturar', [PagoController::class, 'capturarReservaSDK']);
-    Route::post('/pagos/paquete/{compra_paquete_id}/iniciar', [PagoController::class, 'iniciarPaquete']);
-
+    Route::post('/pagos/reserva/{reserva_id}/paypal', [PagoController::class, 'iniciarReserva']);
+    Route::post('/pagos/reserva/{reserva_id}/presencial', [PagoController::class, 'pagarPresencial']);
+    Route::post('/pagos/reserva/{reserva_id}/capturar-sdk', [PagoController::class, 'capturarReservaSDK']);
+    Route::get('/pagos/reserva/capturar', [PagoController::class, 'capturarReserva']);
+    Route::post('/pagos/paquete/{compra_paquete_id}/paypal', [PagoController::class, 'iniciarPaquete']);
+    Route::get('/pagos/paquete/capturar', [PagoController::class, 'capturarPaquete']);
+    Route::get('/pagos/cancelar', [PagoController::class, 'cancelar']);
     /*
     |------------------------------------------
     | Paquetes de sesiones

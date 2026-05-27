@@ -20,6 +20,10 @@ return new class extends Migration
                 'cancelado',
                 'fallido'
             ]);
+            $table->enum('metodo', [
+                'paypal',
+                'presencial'
+            ]);
             $table->foreignId('reserva_id')
                 ->nullable()
                 ->constrained('reservas', 'reserva_id')

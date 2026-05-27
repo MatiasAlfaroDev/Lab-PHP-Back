@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Reserva;
 use App\Models\Servicio;
 use App\Models\User;
+use App\Models\Pago;
 use Illuminate\Http\Request;
 
 class ReservaController extends Controller
@@ -106,7 +107,7 @@ class ReservaController extends Controller
 
     public function cambiarEstado(Request $request, $id)
     {
-        $reserva = Reserva::findOrFail($id);
+         $reserva = Reserva::with('servicio')->findOrFail($id);
 
         $estado = $request->estado;
 
@@ -128,6 +129,18 @@ class ReservaController extends Controller
 
         $reserva->estado = $estado;
         $reserva->save();
+
+        if ($estado === 'confirmada') {
+            if (!$reserva->compra_paquete_id) {
+
+                Pago::create([
+                    'fecha' => now(),
+                    'monto' => $reserva->servicio->precio,
+                    'estado' => 'pendiente',
+                    'reserva_id' => $reserva->reserva_id,
+                ]);
+            }
+        }
 
         return response()->json([
             'success' => true,
