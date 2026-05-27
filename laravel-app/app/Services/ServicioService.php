@@ -44,7 +44,8 @@ class ServicioService
             'tipo' => $data['tipo'],
             'precio' => $data['precio'],
             'duracion' => $data['duracion'],
-            'pausa' => $data['pausa']
+            'pausa' => $data['pausa'],
+            'min_cancelacion' => $data['min_cancelacion'] ?? 24,
         ]);
 
         return [

@@ -1,0 +1,133 @@
+<?php
+
+namespace App\Services;
+
+use App\Models\Reserva;
+use App\Models\Servicio;
+use App\Models\User;
+use Illuminate\Support\Facades\DB;
+
+class ReservaService
+{
+    // CREAR RESERVA
+    public function crearReserva($user, $data)
+    {
+        return DB::transaction(function () use ($user, $data) {
+
+            $hora = $data['hora'] . ':00';
+            $existe = Reserva::where('servicio_id', $data['servicio_id'])
+                ->where('fecha', $data['fecha'])
+                ->where('hora', $hora)
+                ->whereNotIn('estado', ['cancelada'])
+                ->lockForUpdate()
+                ->exists();
+
+            if ($existe) {
+                throw new \Exception('Horario no disponible');
+            }
+
+            return Reserva::create([
+                'cliente_id'  => $user->id,
+                'servicio_id' => $data['servicio_id'],
+                'fecha'       => $data['fecha'],
+                'hora'        => $hora,
+                'estado'      => 'pendiente',
+            ]);
+        });
+    }
+
+    // MIS RESERVAS (CLIENTE)
+    public function misReservas($user)
+    {
+        return Reserva::where('cliente_id', $user->id)
+            ->with(['servicio', 'pago'])
+            ->orderByDesc('fecha')
+            ->orderByDesc('hora')
+            ->get()
+            ->map(function ($r) {
+                if ($r->servicio) {
+                    $prof = User::find($r->servicio->profesional_id);
+                    $r->servicio->setAttribute(
+                        'profesional_nombre',
+                        $prof?->name ?? 'Profesional'
+                    );
+                }
+                return $r;
+            });
+    }
+
+    // AGENDA PROFESIONAL
+    public function agendaProfesional($user)
+    {
+        $servicioIds = Servicio::where('profesional_id', $user->id)
+            ->pluck('servicio_id');
+
+        return Reserva::whereIn('servicio_id', $servicioIds)
+            ->whereNotIn('estado', ['cancelada'])
+            ->with('servicio')
+            ->orderBy('fecha')
+            ->orderBy('hora')
+            ->get()
+            ->map(function ($r) {
+                $cliente = User::find($r->cliente_id);
+                $r->setAttribute(
+                    'cliente_nombre',
+                    $cliente?->name ?? 'Cliente'
+                );
+                return $r;
+            });
+    }
+
+    // CANCELAR RESERVA
+    public function cancelarReserva($user, $reserva)
+    {
+        if ((int) $reserva->cliente_id !== (int) $user->id) {
+            throw new \Exception('No autorizado');
+        }
+
+        if (in_array($reserva->estado, ['cancelada', 'finalizada', 'no_asistida'])) {
+            throw new \Exception('No se puede cancelar esta reserva');
+        }
+
+        $reserva->update(['estado' => 'cancelada']);
+
+        return $reserva;
+    }
+
+    // CAMBIAR ESTADO
+    public function cambiarEstado($user, $reserva, $nuevoEstado)
+    {
+        $actual = $reserva->estado;
+        $reglas = [
+            'pendiente' => ['confirmada', 'cancelada'],
+            'confirmada' => ['pagada', 'cancelada'],
+            'pagada' => ['en_curso'],
+            'en_curso' => ['finalizada', 'no_asistida'],
+        ];
+
+        if (!isset($reglas[$actual]) || !in_array($nuevoEstado, $reglas[$actual])) {
+            throw new \Exception("Transición no válida de $actual a $nuevoEstado");
+        }
+
+        // CONTROL DE ROLES
+        $role = $user->role ?? null;
+
+        if ($nuevoEstado === 'confirmada' && $role !== 'professional') {
+            throw new \Exception("Solo el profesional puede confirmar");
+        }
+
+        if ($nuevoEstado === 'pagada' && $role !== 'client') {
+            throw new \Exception("Solo el cliente puede pagar");
+        }
+
+        if (in_array($nuevoEstado, ['en_curso', 'finalizada', 'no_asistida']) && $role !== 'professional') {
+            throw new \Exception("Solo el profesional puede actualizar este estado");
+        }
+
+        $reserva->update([
+            'estado' => $nuevoEstado
+        ]);
+
+        return $reserva;
+    }
+}

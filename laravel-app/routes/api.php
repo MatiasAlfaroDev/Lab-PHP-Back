@@ -42,7 +42,8 @@ Route::get('/pagos/cancelar', [PagoController::class, 'cancelar']);
 */
 
 Route::middleware('auth:sanctum')->group(function () {
-
+    Route::post('/videocalls/token', [VideoCallController::class, 'token']);
+    Route::post('/videocalls/room', [VideoCallController::class, 'createRoom']);
     /*
     |------------------------------------------
     | Usuario logueado
@@ -65,7 +66,9 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/reservas',              [ReservaController::class, 'store']);
     Route::get('/mis-reservas',           [ReservaController::class, 'misReservas']);
     Route::get('/mi-agenda',              [ReservaController::class, 'agendaProfesional']);
+    Route::get('/reservas/pendientes', [ReservaController::class, 'pendientesProfesional']);
     Route::put('/reservas/{id}/cancelar', [ReservaController::class, 'cancel']);
+    Route::put('/reservas/{id}/estado', [ReservaController::class, 'cambiarEstado']);
 
     // Disponibilidad (protegido)
     Route::put('/servicios/{id}/disponibilidad', [DisponibilidadController::class, 'bulkUpdate']);

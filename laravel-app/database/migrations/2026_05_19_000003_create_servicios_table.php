@@ -20,6 +20,7 @@ return new class extends Migration
             $table->integer('duracion');
             // pausa entre sesiones en minutos
             $table->integer('pausa');
+            $table->integer('min_cancelacion')->default(24);
             $table->enum('modalidad', [
                 'virtual',
                 'hibrido',

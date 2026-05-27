@@ -32,7 +32,8 @@ class ServicioController extends Controller
             'tipo' => 'required|string|max:100',
             'precio' => 'required|numeric|min:0',
             'duracion' => 'required|integer|min:1',
-            'pausa' => 'required|integer|min:0'
+            'pausa' => 'required|integer|min:0',
+            'min_cancelacion' => 'nullable|integer|min:0'
         ]);
 
         if ($validator->fails()) {

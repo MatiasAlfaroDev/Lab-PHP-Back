@@ -21,7 +21,8 @@ class Servicio extends Model
         'precio',
         'duracion',
         'pausa',
-        'modalidad'
+        'modalidad',
+        'min_cancelacion'
     ];
 
     // un servicio pertenece a un profesional

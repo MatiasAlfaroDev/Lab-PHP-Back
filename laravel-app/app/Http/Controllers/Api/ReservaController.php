@@ -86,8 +86,75 @@ class ReservaController extends Controller
             return response()->json(['success' => false, 'message' => 'No se puede cancelar esta reserva'], 409);
         }
 
+        // MIN_CANCELACION CHECK
+        $minHoras = $reserva->servicio->min_cancelacion ?? 0;
+
+        $fechaHoraReserva = \Carbon\Carbon::parse($reserva->fecha . ' ' . substr($reserva->hora, 0, 5));
+        $limiteCancelacion = now()->addHours($minHoras);
+
+        if ($fechaHoraReserva->lessThan($limiteCancelacion)) {
+            return response()->json([
+                'success' => false,
+                'message' => "No podés cancelar con menos de {$minHoras} horas de anticipación"
+            ], 409);
+        }
+
         $reserva->update(['estado' => 'cancelada']);
 
         return response()->json(['success' => true, 'message' => 'Reserva cancelada']);
+    }
+
+    public function cambiarEstado(Request $request, $id)
+    {
+        $reserva = Reserva::findOrFail($id);
+
+        $estado = $request->estado;
+
+        $estadosValidos = ['confirmada', 'cancelada'];
+
+        if (!in_array($estado, $estadosValidos)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Estado no válido'
+            ], 400);
+        }
+
+        if ($reserva->estado !== 'pendiente') {
+            return response()->json([
+                'success' => false,
+                'message' => 'Solo se pueden modificar reservas pendientes'
+            ], 400);
+        }
+
+        $reserva->estado = $estado;
+        $reserva->save();
+
+        return response()->json([
+            'success' => true,
+            'data' => $reserva
+        ]);
+    }
+
+    public function pendientesProfesional(Request $request)
+    {
+        $servicioIds = Servicio::where('profesional_id', $request->user()->id)
+            ->pluck('servicio_id');
+
+        $reservas = Reserva::whereIn('servicio_id', $servicioIds)
+            ->where('estado', 'pendiente')
+            ->with('servicio')
+            ->orderBy('fecha')
+            ->orderBy('hora')
+            ->get()
+            ->map(function ($r) {
+                $cliente = User::find($r->cliente_id);
+                $r->cliente_nombre = $cliente?->name ?? 'Cliente';
+                return $r;
+            });
+
+        return response()->json([
+            'success' => true,
+            'data' => $reservas
+        ]);
     }
 }
