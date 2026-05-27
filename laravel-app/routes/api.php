@@ -9,6 +9,7 @@ use App\Http\Controllers\Api\PaqueteController;
 use App\Http\Controllers\Api\ProfesionalController;
 use App\Http\Controllers\Api\DisponibilidadController;
 use App\Http\Controllers\Api\ReservaController;
+use App\Http\Controllers\Api\ClienteController;
 
 /*
 |--------------------------------------------------------------------------
@@ -76,6 +77,11 @@ Route::middleware('auth:sanctum')->group(function () {
     |------------------------------------------
     */
     //Route::apiResource('reservas', ReservaController::class);
+
+    Route::middleware('auth:sanctum')->get(
+    '/clientes',
+    [ClienteController::class, 'index']
+);
 
     /*
     |------------------------------------------
