@@ -9,7 +9,7 @@ use Illuminate\Support\Facades\DB;
 
 class ReservaService
 {
-    // CREAR RESERVA
+    // CREAR RESERVA no se esta usando
     public function crearReserva($user, $data)
     {
         return DB::transaction(function () use ($user, $data) {
@@ -36,7 +36,7 @@ class ReservaService
         });
     }
 
-    // MIS RESERVAS (CLIENTE)
+    // MIS RESERVAS (CLIENTE) no se esta usando
     public function misReservas($user)
     {
         return Reserva::where('cliente_id', $user->id)
@@ -56,7 +56,7 @@ class ReservaService
             });
     }
 
-    // AGENDA PROFESIONAL
+    // AGENDA PROFESIONAL no se esta usando
     public function agendaProfesional($user)
     {
         $servicioIds = Servicio::where('profesional_id', $user->id)
@@ -78,7 +78,7 @@ class ReservaService
             });
     }
 
-    // CANCELAR RESERVA
+    // CANCELAR RESERVA no se esta usando 
     public function cancelarReserva($user, $reserva)
     {
         if ((int) $reserva->cliente_id !== (int) $user->id) {
@@ -94,7 +94,7 @@ class ReservaService
         return $reserva;
     }
 
-    // CAMBIAR ESTADO
+    // CAMBIAR ESTADO no se esta usando
     public function cambiarEstado($user, $reserva, $nuevoEstado)
     {
         $actual = $reserva->estado;
@@ -129,5 +129,25 @@ class ReservaService
         ]);
 
         return $reserva;
+    }
+
+    public function finalizar(Reserva $reserva)
+    {
+        if ($reserva->estado !== 'en_curso') {
+            return ['success' => false, 'message' => 'Solo reservas en curso'];
+        }
+
+        $reserva->update(['estado' => 'finalizada']);
+        return ['success' => true, 'message' => 'Reserva finalizada'];
+    }
+
+    public function noAsistida(Reserva $reserva)
+    {
+        if ($reserva->estado !== 'en_curso') {
+            return ['success' => false, 'message' => 'Solo reservas en curso'];
+        }
+
+        $reserva->update(['estado' => 'no_asistida']);
+        return ['success' => true, 'message' => 'Reserva marcada como no asistida'];
     }
 }

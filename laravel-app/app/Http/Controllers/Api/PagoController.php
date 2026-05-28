@@ -73,4 +73,14 @@ class PagoController extends Controller
             $request->query('token')
         );
     }
+
+    public function confirmarPresencial(Request $request, $reserva_id)
+    {
+        $result = $this->pagoService->confirmarPagoPresencial(
+            $request->user(),
+            $reserva_id
+        );
+
+        return response()->json($result, $result['status'] ?? 200);
+    }
 }

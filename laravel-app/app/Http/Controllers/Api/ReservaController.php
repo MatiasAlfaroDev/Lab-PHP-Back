@@ -8,9 +8,16 @@ use App\Models\Servicio;
 use App\Models\User;
 use App\Models\Pago;
 use Illuminate\Http\Request;
+use App\Services\ReservaService;
 
 class ReservaController extends Controller
 {
+    protected $reservaService;
+
+    public function __construct(ReservaService $reservaService)
+    {
+        $this->reservaService = $reservaService;
+    }
     // POST /reservas
     public function store(Request $request)
     {
@@ -165,9 +172,28 @@ class ReservaController extends Controller
                 return $r;
             });
 
-        return response()->json([
-            'success' => true,
-            'data' => $reservas
-        ]);
+        return response()->json([ 'success' => true, 'data' => $reservas]);
+    }
+
+    public function finalizar($id)
+    {
+        $reserva = Reserva::findOrFail($id);
+        $result = $this->reservaService->finalizar($reserva);
+
+        return response()->json(
+            $result,
+            $result['success'] ? 200 : 400
+        );
+    }
+
+    public function noAsistida($id)
+    {
+        $reserva = Reserva::findOrFail($id);
+        $result = $this->reservaService->noAsistida($reserva);
+
+        return response()->json(
+            $result,
+            $result['success'] ? 200 : 400
+        );
     }
 }

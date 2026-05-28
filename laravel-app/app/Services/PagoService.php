@@ -354,4 +354,19 @@ class PagoService
             'message' => 'Pago cancelado'
         ]);
     }
+
+    public function confirmarPagoPresencial($user, $reserva_id)
+    {
+        $reserva = Reserva::with('pago')->findOrFail($reserva_id);
+        if ((int) $reserva->cliente_id !== (int) $user->id) {
+            return ['success' => false, 'message' => 'No autorizado', 'status' => 403];
+        }
+
+        if (!$reserva->pago) {
+            return ['success' => false, 'message' => 'No existe pago', 'status' => 400];
+        }
+
+        $reserva->pago->update(['estado' => 'aprobado']);
+        return ['success' => true, 'message' => 'Pago confirmado', 'status' => 200];
+    }
 }
