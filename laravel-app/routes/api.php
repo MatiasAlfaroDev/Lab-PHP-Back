@@ -10,6 +10,7 @@ use App\Http\Controllers\Api\ProfesionalController;
 use App\Http\Controllers\Api\DisponibilidadController;
 use App\Http\Controllers\Api\ReservaController;
 use App\Http\Controllers\Api\ClienteController;
+use App\Http\Controllers\Api\CompraPaqueteController;
 
 /*
 |--------------------------------------------------------------------------
@@ -17,8 +18,11 @@ use App\Http\Controllers\Api\ClienteController;
 |--------------------------------------------------------------------------
 */
 
-Route::post('/register', [UserController::class, 'register']);
 Route::post('/login', [UserController::class, 'login']);
+Route::post('/auth/login', [UserController::class, 'login']);
+
+Route::post('/register', [UserController::class, 'register']);
+Route::post('/auth/register', [UserController::class, 'register']);
 
 // Servicios (público para el front)
 Route::get('/servicios', [ServicioController::class, 'index']);
@@ -43,8 +47,8 @@ Route::get('/pagos/cancelar', [PagoController::class, 'cancelar']);
 */
 
 Route::middleware('auth:sanctum')->group(function () {
-    Route::post('/videocalls/token', [VideoCallController::class, 'token']);
-    Route::post('/videocalls/room', [VideoCallController::class, 'createRoom']);
+  //  Route::post('/videocalls/token', [VideoCallController::class, 'token']);
+   // Route::post('/videocalls/room', [VideoCallController::class, 'createRoom']);
     /*
     |------------------------------------------
     | Usuario logueado
@@ -106,5 +110,7 @@ Route::middleware('auth:sanctum')->group(function () {
     |------------------------------------------
     */
     Route::apiResource('paquetes', PaqueteController::class);
+    Route::post('/compra-paquetes', [CompraPaqueteController::class, 'store']);
+    Route::get('/mis-paquetes', [CompraPaqueteController::class, 'misPaquetes']);
 
 });
