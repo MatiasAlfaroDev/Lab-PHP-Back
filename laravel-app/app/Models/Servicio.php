@@ -22,7 +22,16 @@ class Servicio extends Model
         'duracion',
         'pausa',
         'modalidad',
-        'min_cancelacion'
+        'min_cancelacion',
+        'min_aviso',
+        'max_anticipacion_dias',
+        'aceptar_automaticamente',
+        'permitir_feriados',
+    ];
+
+    protected $casts = [
+        'aceptar_automaticamente' => 'boolean',
+        'permitir_feriados'       => 'boolean',
     ];
 
     // un servicio pertenece a un profesional
