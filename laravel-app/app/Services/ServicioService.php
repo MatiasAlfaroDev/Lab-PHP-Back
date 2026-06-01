@@ -4,9 +4,39 @@ namespace App\Services;
 
 use App\Models\Servicio;
 use App\Models\Profesional;
+use App\Services\GeocodingService;
 
 class ServicioService
 {
+    public function __construct(private GeocodingService $geocodingService) {}
+
+    private function resolverUbicacion(array $data, string $modalidad): array
+    {
+        $esPresencial = in_array($modalidad, ['presencial', 'hibrido']);
+
+        if (!$esPresencial) {
+            return ['direccion' => null, 'latitud' => null, 'longitud' => null];
+        }
+
+        $direccion = $data['direccion'] ?? null;
+        $latitud   = $data['latitud']   ?? null;
+        $longitud  = $data['longitud']  ?? null;
+
+        // Si se da dirección sin coordenadas, geocodificar automáticamente
+        if ($direccion && ($latitud === null || $longitud === null)) {
+            $geo = $this->geocodingService->geocodificar($direccion);
+            if ($geo) {
+                return [
+                    'direccion' => $geo['direccion_formateada'],
+                    'latitud'   => $geo['latitud'],
+                    'longitud'  => $geo['longitud'],
+                ];
+            }
+        }
+
+        return compact('direccion', 'latitud', 'longitud');
+    }
+
     public function listarTodos()
     {
         return [
@@ -35,17 +65,22 @@ class ServicioService
             ];
         }
 
-        // Crear servicio
+        $modalidad = strtolower($data['modalidad']);
+        $ubicacion = $this->resolverUbicacion($data, $modalidad);
+
         $servicio = Servicio::create([
             'profesional_id' => $profesional->user_id,
-            'nombre' => $data['nombre'],
-            'descripcion' => $data['descripcion'],
-            'modalidad' => strtolower($data['modalidad']),
-            'tipo' => $data['tipo'],
-            'precio' => $data['precio'],
-            'duracion' => $data['duracion'],
-            'pausa' => $data['pausa'],
-            'min_cancelacion' => $data['min_cancelacion'] ?? 24,
+            'nombre'         => $data['nombre'],
+            'descripcion'    => $data['descripcion'],
+            'modalidad'      => $modalidad,
+            'tipo'           => $data['tipo'],
+            'precio'         => $data['precio'],
+            'duracion'       => $data['duracion'],
+            'pausa'          => $data['pausa'],
+            'min_cancelacion'=> $data['min_cancelacion'] ?? 24,
+            'direccion'      => $ubicacion['direccion'],
+            'latitud'        => $ubicacion['latitud'],
+            'longitud'       => $ubicacion['longitud'],
         ]);
 
         return [
@@ -64,15 +99,25 @@ class ServicioService
             return ['success' => false, 'message' => 'No tenés permiso para editar este servicio'];
         }
 
+        $modalidad = isset($data['modalidad']) ? strtolower($data['modalidad']) : $servicio->modalidad;
+        $ubicacion = $this->resolverUbicacion($data + [
+            'direccion' => $servicio->direccion,
+            'latitud'   => $servicio->latitud,
+            'longitud'  => $servicio->longitud,
+        ], $modalidad);
+
         $servicio->update([
             'nombre'          => $data['nombre']          ?? $servicio->nombre,
             'descripcion'     => $data['descripcion']     ?? $servicio->descripcion,
-            'modalidad'       => isset($data['modalidad']) ? strtolower($data['modalidad']) : $servicio->modalidad,
+            'modalidad'       => $modalidad,
             'tipo'            => $data['tipo']             ?? $servicio->tipo,
             'precio'          => $data['precio']           ?? $servicio->precio,
             'duracion'        => $data['duracion']         ?? $servicio->duracion,
             'pausa'           => $data['pausa']            ?? $servicio->pausa,
             'min_cancelacion' => $data['min_cancelacion']  ?? $servicio->min_cancelacion,
+            'direccion'       => $ubicacion['direccion'],
+            'latitud'         => $ubicacion['latitud'],
+            'longitud'        => $ubicacion['longitud'],
         ]);
 
         return ['success' => true, 'message' => 'Servicio actualizado', 'data' => $servicio->fresh()];

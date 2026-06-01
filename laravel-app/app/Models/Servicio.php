@@ -27,11 +27,16 @@ class Servicio extends Model
         'max_anticipacion_dias',
         'aceptar_automaticamente',
         'permitir_feriados',
+        'direccion',
+        'latitud',
+        'longitud',
     ];
 
     protected $casts = [
         'aceptar_automaticamente' => 'boolean',
         'permitir_feriados'       => 'boolean',
+        'latitud'                 => 'float',
+        'longitud'                => 'float',
     ];
 
     // un servicio pertenece a un profesional

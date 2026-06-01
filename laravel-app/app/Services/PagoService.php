@@ -29,22 +29,13 @@ class PagoService
             return response()->json(['message' => 'No autorizado'], 403);
         }
 
-        if (!$reserva->pago) {
-            return response()->json(['message' => 'La reserva aún no fue confirmada'], 400);
-        }
-
-        if ($reserva->pago->estado === 'aprobado') {
+        if ($reserva->pago?->estado === 'aprobado') {
             return response()->json(['message' => 'La reserva ya fue pagada'], 409);
         }
 
-        $paypal = $this->paypal();
+        $monto = number_format($reserva->servicio->precio, 2, '.', '');
 
-        $monto = number_format(
-            $reserva->pago->monto,
-            2,
-            '.',
-            ''
-        );
+        $paypal = $this->paypal();
 
         $order = $paypal->createOrder([
             'intent' => 'CAPTURE',
@@ -55,26 +46,36 @@ class PagoService
                     'value' => $monto,
                 ],
             ]],
-
             'application_context' => [
-                'return_url' =>config('app.url') .'/api/pagos/reserva/capturar',
-
-                'cancel_url' =>config('app.url') .'/api/pagos/cancelar',
+                'return_url' => config('app.url') . '/api/pagos/reserva/capturar',
+                'cancel_url' => config('app.url') . '/api/pagos/cancelar',
             ],
         ]);
 
         if (isset($order['error'])) {
             return response()->json([
-                'message' => 'Error PayPal','detail' => $order['error']], 500);
+                'message' => 'Error PayPal',
+                'detail' => $order['error'],
+            ], 500);
         }
 
-        $reserva->pago->update(['metodo' => 'paypal','paypal_order_id' => $order['id'],
-        ]);
+        Pago::updateOrCreate(
+            ['reserva_id' => $reserva->reserva_id],
+            [
+                'fecha' => now()->toDateString(),
+                'monto' => $monto,
+                'estado' => 'pendiente',
+                'metodo' => 'paypal',
+                'paypal_order_id' => $order['id'],
+            ]
+        );
 
         $approvalUrl = collect($order['links'])
             ->firstWhere('rel', 'approve')['href'];
 
-        return response()->json(['approval_url' => $approvalUrl,'paypal_order_id' => $order['id']
+        return response()->json([
+            'approval_url' => $approvalUrl,
+            'paypal_order_id' => $order['id'],
         ]);
     }
 

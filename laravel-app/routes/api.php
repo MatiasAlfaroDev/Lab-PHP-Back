@@ -11,6 +11,7 @@ use App\Http\Controllers\Api\DisponibilidadController;
 use App\Http\Controllers\Api\ReservaController;
 use App\Http\Controllers\Api\ClienteController;
 use App\Http\Controllers\Api\CompraPaqueteController;
+use App\Http\Controllers\Api\GeocodingController;
 
 /*
 |--------------------------------------------------------------------------
@@ -26,6 +27,9 @@ Route::post('/auth/register', [UserController::class, 'register']);
 
 // Servicios (público para el front)
 Route::get('/servicios', [ServicioController::class, 'index']);
+
+// Geocoding (público) — convierte dirección en coordenadas
+Route::get('/geocoding', [GeocodingController::class, 'geocodificar']);
 
 // Perfil público de profesional
 Route::get('/profesionales/{id}', [ProfesionalController::class, 'show']);
@@ -100,10 +104,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/pagos/reserva/{reserva_id}/paypal', [PagoController::class, 'iniciarReserva']);
     Route::post('/pagos/reserva/{reserva_id}/presencial', [PagoController::class, 'pagarPresencial']);
     Route::post('/pagos/reserva/{reserva_id}/capturar-sdk', [PagoController::class, 'capturarReservaSDK']);
-    Route::get('/pagos/reserva/capturar', [PagoController::class, 'capturarReserva']);
     Route::post('/pagos/paquete/{compra_paquete_id}/paypal', [PagoController::class, 'iniciarPaquete']);
-    Route::get('/pagos/paquete/capturar', [PagoController::class, 'capturarPaquete']);
-    Route::get('/pagos/cancelar', [PagoController::class, 'cancelar']);
     /*
     |------------------------------------------
     | Paquetes de sesiones
