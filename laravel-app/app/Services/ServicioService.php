@@ -55,6 +55,43 @@ class ServicioService
         ];
     }
 
+    public function actualizarServicio(int $id, array $data, $user)
+    {
+        $servicio = Servicio::findOrFail($id);
+        $profesional = Profesional::where('user_id', $user->id)->first();
+
+        if (!$profesional || $servicio->profesional_id !== $profesional->user_id) {
+            return ['success' => false, 'message' => 'No tenés permiso para editar este servicio'];
+        }
+
+        $servicio->update([
+            'nombre'          => $data['nombre']          ?? $servicio->nombre,
+            'descripcion'     => $data['descripcion']     ?? $servicio->descripcion,
+            'modalidad'       => isset($data['modalidad']) ? strtolower($data['modalidad']) : $servicio->modalidad,
+            'tipo'            => $data['tipo']             ?? $servicio->tipo,
+            'precio'          => $data['precio']           ?? $servicio->precio,
+            'duracion'        => $data['duracion']         ?? $servicio->duracion,
+            'pausa'           => $data['pausa']            ?? $servicio->pausa,
+            'min_cancelacion' => $data['min_cancelacion']  ?? $servicio->min_cancelacion,
+        ]);
+
+        return ['success' => true, 'message' => 'Servicio actualizado', 'data' => $servicio->fresh()];
+    }
+
+    public function eliminarServicio(int $id, $user)
+    {
+        $servicio = Servicio::findOrFail($id);
+        $profesional = Profesional::where('user_id', $user->id)->first();
+
+        if (!$profesional || $servicio->profesional_id !== $profesional->user_id) {
+            return ['success' => false, 'message' => 'No tenés permiso para eliminar este servicio'];
+        }
+
+        $servicio->delete();
+
+        return ['success' => true, 'message' => 'Servicio eliminado'];
+    }
+
     public function obtenerServiciosProfesional($user)
     {
         if ($user->role !== 'professional') {

@@ -54,6 +54,35 @@ class ServicioController extends Controller
         );
     }
 
+    public function update(Request $request, $id)
+    {
+        $validator = Validator::make($request->all(), [
+            'nombre'          => 'sometimes|required|string|max:255',
+            'descripcion'     => 'sometimes|required|string',
+            'modalidad'       => 'sometimes|required|string|max:255',
+            'tipo'            => 'sometimes|required|string|max:100',
+            'precio'          => 'sometimes|required|numeric|min:0',
+            'duracion'        => 'sometimes|required|integer|min:1',
+            'pausa'           => 'sometimes|required|integer|min:0',
+            'min_cancelacion' => 'nullable|integer|min:0',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(['success' => false, 'errors' => $validator->errors()], 422);
+        }
+
+        $response = $this->servicioService->actualizarServicio((int) $id, $request->all(), $request->user());
+
+        return response()->json($response, $response['success'] ? 200 : 403);
+    }
+
+    public function destroy(Request $request, $id)
+    {
+        $response = $this->servicioService->eliminarServicio((int) $id, $request->user());
+
+        return response()->json($response, $response['success'] ? 200 : 403);
+    }
+
     // Obtener servicios del profesional logueado
     public function misServicios(Request $request)
     {
