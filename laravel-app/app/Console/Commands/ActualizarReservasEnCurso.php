@@ -1,6 +1,7 @@
 <?php
 
 namespace App\Console\Commands;
+
 use Illuminate\Console\Command;
 use App\Models\Reserva;
 use Carbon\Carbon;
@@ -8,22 +9,41 @@ use Carbon\Carbon;
 class ActualizarReservasEnCurso extends Command
 {
     protected $signature = 'reservas:en-curso';
-    protected $description = 'Pasa reservas a en_curso cuando llega la hora';
+    protected $description = 'Actualiza estados de reservas automáticamente';
 
     public function handle()
     {
         $now = Carbon::now();
 
-        Reserva::whereIn('estado', ['confirmada', 'pagada'])
+        Reserva::with('servicio')
+            ->whereIn('estado', ['confirmada', 'pagada', 'en_curso'])
             ->get()
             ->each(function ($reserva) use ($now) {
 
-                $fechaHora = Carbon::parse(
+                $inicio = Carbon::parse(
                     $reserva->fecha . ' ' . substr($reserva->hora, 0, 5)
                 );
 
-                if ($fechaHora->lessThanOrEqualTo($now)) {
-                    $reserva->update(['estado' => 'en_curso']);
+                $fin = (clone $inicio)->addMinutes(
+                    $reserva->servicio->duracion
+                );
+
+                if (
+                    in_array($reserva->estado, ['confirmada', 'pagada']) &&
+                    $inicio->lessThanOrEqualTo($now)
+                ) {
+                    $reserva->update([
+                        'estado' => 'en_curso'
+                    ]);
+                }
+
+                if (
+                    $reserva->estado === 'en_curso' &&
+                    $fin->lessThanOrEqualTo($now)
+                ) {
+                    $reserva->update([
+                        'estado' => 'finalizada'
+                    ]);
                 }
             });
 

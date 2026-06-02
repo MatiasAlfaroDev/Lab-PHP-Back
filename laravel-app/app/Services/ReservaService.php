@@ -131,20 +131,10 @@ class ReservaService
         return $reserva;
     }
 
-    public function finalizar(Reserva $reserva)
-    {
-        if ($reserva->estado !== 'en_curso') {
-            return ['success' => false, 'message' => 'Solo reservas en curso'];
-        }
-
-        $reserva->update(['estado' => 'finalizada']);
-        return ['success' => true, 'message' => 'Reserva finalizada'];
-    }
-
     public function noAsistida(Reserva $reserva)
     {
-        if ($reserva->estado !== 'en_curso') {
-            return ['success' => false, 'message' => 'Solo reservas en curso'];
+        if (!in_array($reserva->estado, ['en_curso', 'finalizada'])) {
+            return ['success' => false, 'message' => 'Estado no permitido'];
         }
 
         $reserva->update(['estado' => 'no_asistida']);

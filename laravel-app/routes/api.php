@@ -78,7 +78,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/reservas/pendientes', [ReservaController::class, 'pendientesProfesional']);
     Route::put('/reservas/{id}/cancelar', [ReservaController::class, 'cancel']);
     Route::put('/reservas/{id}/estado', [ReservaController::class, 'cambiarEstado']);
-    Route::post('/reservas/{id}/pago-no-asistida', [PagoController::class, 'pagoNoAsistida']);
+    Route::put('/reservas/{id}/no-asistida', [ReservaController::class, 'noAsistida']);
     Route::post('/reservas/{id}/pago-presencial', [PagoController::class, 'confirmarPresencial']);
 
     // Disponibilidad (protegido)

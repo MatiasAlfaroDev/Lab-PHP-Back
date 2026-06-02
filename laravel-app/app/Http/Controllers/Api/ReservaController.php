@@ -68,7 +68,7 @@ class ReservaController extends Controller
 
         $reservas = Reserva::whereIn('servicio_id', $servicioIds)
             ->whereNotIn('estado', ['cancelada'])
-            ->with('servicio')
+            ->with(['servicio', 'pago'])
             ->orderBy('fecha')
             ->orderBy('hora')
             ->get()
@@ -112,6 +112,7 @@ class ReservaController extends Controller
         return response()->json(['success' => true, 'message' => 'Reserva cancelada']);
     }
 
+    // PUT /reservas/{id}/estado
     public function cambiarEstado(Request $request, $id)
     {
          $reserva = Reserva::with('servicio')->findOrFail($id);
@@ -155,6 +156,7 @@ class ReservaController extends Controller
         ]);
     }
 
+    // GET /reservas/pendientes (profesional)
     public function pendientesProfesional(Request $request)
     {
         $servicioIds = Servicio::where('profesional_id', $request->user()->id)
@@ -175,17 +177,7 @@ class ReservaController extends Controller
         return response()->json([ 'success' => true, 'data' => $reservas]);
     }
 
-    public function finalizar($id)
-    {
-        $reserva = Reserva::findOrFail($id);
-        $result = $this->reservaService->finalizar($reserva);
-
-        return response()->json(
-            $result,
-            $result['success'] ? 200 : 400
-        );
-    }
-
+    // PUT /reservas/{id}/no-asistida
     public function noAsistida($id)
     {
         $reserva = Reserva::findOrFail($id);
