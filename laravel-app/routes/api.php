@@ -12,6 +12,7 @@ use App\Http\Controllers\Api\ReservaController;
 use App\Http\Controllers\Api\ClienteController;
 use App\Http\Controllers\Api\CompraPaqueteController;
 use App\Http\Controllers\Api\GeocodingController;
+use App\Http\Controllers\Api\VideoCallController;
 
 /*
 |--------------------------------------------------------------------------
@@ -43,6 +44,7 @@ Route::get('/servicios/{id}/slots',            [DisponibilidadController::class,
 Route::get('/pagos/reserva/capturar', [PagoController::class, 'capturarReserva']);
 Route::get('/pagos/paquete/capturar', [PagoController::class, 'capturarPaquete']);
 Route::get('/pagos/cancelar', [PagoController::class, 'cancelar']);
+Route::get('/videollamada/token/{reserva}', [VideoCallController::class, 'token']);
 
 /*
 |--------------------------------------------------------------------------
@@ -51,7 +53,7 @@ Route::get('/pagos/cancelar', [PagoController::class, 'cancelar']);
 */
 
 Route::middleware('auth:sanctum')->group(function () {
-  //  Route::post('/videocalls/token', [VideoCallController::class, 'token']);
+  //Route::get('/videollamada/token/{reserva}', [VideollamadaController::class, 'token']);
    // Route::post('/videocalls/room', [VideoCallController::class, 'createRoom']);
     /*
     |------------------------------------------
