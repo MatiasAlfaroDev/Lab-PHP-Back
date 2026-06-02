@@ -27,14 +27,12 @@ class PaqueteService
                 $servicio = Servicio::find($item['servicio_id']);
 
                 if (!$servicio) {
-
                     throw new \Exception(
                         'Servicio con ID ' . $item['servicio_id'] . ' no encontrado'
                     );
                 }
 
                 if ($servicio->profesional_id != $user->id) {
-
                     throw new \Exception(
                         'No podés usar servicios de otro profesional'
                     );
@@ -77,19 +75,36 @@ class PaqueteService
             ->find($id);
     }
 
-    public function actualizarPaquete($id, array $data)
+    public function actualizarPaquete($id, array $data, $user)
     {
         DB::beginTransaction();
 
         try {
 
-            $paquete = Paquete::find($id);
+            $paquete = Paquete::with('items.servicio')
+                ->find($id);
 
             if (!$paquete) {
-
                 return [
                     'success' => false,
                     'message' => 'Paquete no encontrado'
+                ];
+            }
+
+            $esDueno = true;
+
+            foreach ($paquete->items as $item) {
+
+                if ($item->servicio->profesional_id != $user->id) {
+                    $esDueno = false;
+                    break;
+                }
+            }
+
+            if (!$esDueno) {
+                return [
+                    'success' => false,
+                    'message' => 'No autorizado'
                 ];
             }
 
@@ -108,11 +123,24 @@ class PaqueteService
             // crear nuevos
             foreach ($data['servicios'] as $item) {
 
+                $servicio = Servicio::find($item['servicio_id']);
+
+                if (!$servicio) {
+                    throw new \Exception(
+                        'Servicio con ID ' . $item['servicio_id'] . ' no encontrado'
+                    );
+                }
+
+                if ($servicio->profesional_id != $user->id) {
+                    throw new \Exception(
+                        'No podés usar servicios de otro profesional'
+                    );
+                }
+
                 ItemPaquete::create([
                     'paquete_id' => $id,
                     'servicio_id' => $item['servicio_id'],
-                    'cantidad_sesiones' =>
-                        $item['cantidad_sesiones']
+                    'cantidad_sesiones' => $item['cantidad_sesiones']
                 ]);
             }
 
@@ -134,14 +162,32 @@ class PaqueteService
         }
     }
 
-    public function eliminarPaquete($id)
+    public function eliminarPaquete($id, $user)
     {
-        $paquete = Paquete::find($id);
+        $paquete = Paquete::with('items.servicio')
+            ->find($id);
 
         if (!$paquete) {
             return [
                 'success' => false,
                 'message' => 'Paquete no encontrado'
+            ];
+        }
+
+        $esDueno = true;
+
+        foreach ($paquete->items as $item) {
+
+            if ($item->servicio->profesional_id != $user->id) {
+                $esDueno = false;
+                break;
+            }
+        }
+
+        if (!$esDueno) {
+            return [
+                'success' => false,
+                'message' => 'No autorizado'
             ];
         }
 

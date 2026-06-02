@@ -103,7 +103,8 @@ class PaqueteController extends Controller
         $response = $this->paqueteService
             ->actualizarPaquete(
                 $id,
-                $request->all()
+                $request->all(),
+                $request->user()
             );
 
         return response()->json(
@@ -112,10 +113,13 @@ class PaqueteController extends Controller
         );
     }
 
-    public function destroy($id)
+    public function destroy(Request $request, $id)
     {
         $response = $this->paqueteService
-            ->eliminarPaquete($id);
+            ->eliminarPaquete(
+                $id,
+                $request->user()
+            );
 
         return response()->json(
             $response,

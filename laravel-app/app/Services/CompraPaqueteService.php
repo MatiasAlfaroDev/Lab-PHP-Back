@@ -11,6 +11,13 @@ class CompraPaqueteService
 {
     public function comprarPaquete($user, $paquete_id)
     {
+        if (!$user->cliente) {
+                return [
+                    'success' => false,
+                    'message' => 'Solo los clientes pueden comprar paquetes'
+                ];
+        }
+
         DB::beginTransaction();
 
         try {
