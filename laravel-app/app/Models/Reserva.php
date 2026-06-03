@@ -18,7 +18,9 @@ class Reserva extends Model
         'compra_item_paquete_id',
         'fecha',
         'hora',
-        'estado'
+        'estado',
+        'modalidad',
+        'estado_videollamada'
     ];
 
     // Cliente dueño de la reserva

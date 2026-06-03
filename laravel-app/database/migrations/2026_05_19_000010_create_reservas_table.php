@@ -39,6 +39,16 @@ return new class extends Migration
                 'finalizada',
                 'no_asistida'
             ]);
+            $table->enum('modalidad', [
+                'presencial', 
+                'virtual',
+            ])->default('presencial');
+            $table->enum('estado_videollamada', [
+                'no_aplica',
+                'pendiente',
+                'en_curso',
+                'finalizada'
+            ])->default('no_aplica');
         });
     }
 

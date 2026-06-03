@@ -22,6 +22,10 @@ return new class extends Migration
             ]);
             $table->time('hora_inicio');
             $table->time('hora_fin');
+            $table->enum('modalidad', [
+                'presencial',
+                'virtual'
+            ])->default('presencial');
             $table->foreignId('servicio_id')
                   ->references('servicio_id')
                   ->on('servicios')

@@ -15,7 +15,8 @@ class Disponibilidad extends Model
         'servicio_id',
         'dia_semana', 
         'hora_inicio',
-        'hora_fin'
+        'hora_fin',
+        'modalidad'
     ];
 
     // Una disponibilidad pertenece a un único servicio.

@@ -27,17 +27,29 @@ class ReservaController extends Controller
             'hora'        => 'required|date_format:H:i',
         ]);
 
+        $servicio = Servicio::findOrFail($request->servicio_id);
+
+        if ($servicio->modalidad === 'hibrido') {
+            $modalidad = $request->modalidad;
+        } else {
+            $modalidad = $servicio->modalidad;
+        }
+
         $reserva = Reserva::create([
-            'cliente_id'  => $request->user()->id,
+            'cliente_id' => $request->user()->id,
             'servicio_id' => $request->servicio_id,
-            'fecha'       => $request->fecha,
-            'hora'        => $request->hora . ':00',
-            'estado'      => 'pendiente',
+            'fecha' => $request->fecha,
+            'hora' => $request->hora . ':00',
+            'estado' => 'pendiente',
+            'modalidad' => $modalidad,
+            'estado_videollamada' => $modalidad === 'virtual'
+                ? 'pendiente'
+                : 'no_aplica',
         ]);
 
         return response()->json([
             'success' => true,
-            'data'    => $reserva->load('servicio'),
+            'data' => $reserva->load('servicio'),
         ], 201);
     }
 

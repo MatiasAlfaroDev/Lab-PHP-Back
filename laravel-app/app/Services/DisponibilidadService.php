@@ -52,13 +52,19 @@ class DisponibilidadService
         }
 
         Disponibilidad::where('servicio_id', $servicioId)->delete();
+        $modalidadServicio = $servicio->modalidad;
 
         foreach ($nuevas as $d) {
+            $modalidadDisponibilidad =
+            $modalidadServicio === 'hibrido'
+                ? $d['modalidad']
+                : $modalidadServicio;
             Disponibilidad::create([
                 'servicio_id' => $servicioId,
                 'dia_semana'  => $d['dia_semana'],
                 'hora_inicio' => $d['hora_inicio'],
                 'hora_fin'    => $d['hora_fin'],
+                'modalidad'   => $modalidadDisponibilidad
             ]);
         }
 
@@ -107,7 +113,10 @@ class DisponibilidadService
                 $slotStr = $cursor->format('H:i');
 
                 if (!in_array($slotStr, $reservadas)) {
-                    $slots[] = $slotStr;
+                    $slots[] = [
+                        'hora' => $slotStr,
+                        'modalidad' => $bloque->modalidad
+                    ];
                 }
 
                 $cursor->addMinutes($duracion + $pausa);

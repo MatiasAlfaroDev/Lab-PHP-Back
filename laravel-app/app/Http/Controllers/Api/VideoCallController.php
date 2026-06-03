@@ -20,10 +20,14 @@ class VideoCallController extends Controller
     {
         $reserva = Reserva::findOrFail($reserva_id);
 
-        // 🧪 MODO DEMO: si no hay usuario autenticado, usamos uno fake
-        $user = $request->user() ?? (object)[
-            "id" => "demo-user"
-        ];
+        $user = $request->user();
+
+        if (!$user) {
+            return response()->json([
+                "success" => false,
+                "message" => "No autenticado"
+            ], 401);
+        }
 
         $data = $this->videoCallService->generarToken($reserva, $user);
 
