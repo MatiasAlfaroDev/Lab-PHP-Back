@@ -68,4 +68,16 @@ class CompraPaqueteService
         ->where('cliente_id', $user->id)
         ->get();
     }
+
+    public function obtenerCompra($id, $user)
+    {
+        return CompraPaquete::with([
+            'paquete',
+            'items.itemPaquete',
+            'pago'
+        ])
+        ->where('cliente_id', $user->id)
+        ->where('compra_paquete_id', $id)
+        ->first();
+    }
 }
