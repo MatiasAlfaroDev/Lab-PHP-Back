@@ -53,6 +53,7 @@ Route::get('/pagos/cancelar', [PagoController::class, 'cancelar']);
 
 Route::middleware('auth:sanctum')->group(function () {
     Route::get('/videollamada/token/{reserva}', [VideoCallController::class, 'token']);
+    Route::post('/videollamada/{id}/estado', [ReservaController::class, 'actualizarEstadoVideollamada']);
     /*
     |------------------------------------------
     | Usuario logueado

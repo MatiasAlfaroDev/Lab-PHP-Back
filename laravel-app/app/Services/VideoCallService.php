@@ -13,7 +13,7 @@ class VideoCallService
         $livekitUrl = env('LIVEKIT_URL');
 
         // 🧠 1 room por reserva (esto es correcto)
-        $roomName = "reserva_" . $reserva->id;
+        $roomName = "reserva_" . $reserva->reserva_id;
 
         $now = time();
 

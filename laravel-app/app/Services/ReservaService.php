@@ -140,4 +140,20 @@ class ReservaService
         $reserva->update(['estado' => 'no_asistida']);
         return ['success' => true, 'message' => 'Reserva marcada como no asistida'];
     }
+
+   public function actualizarEstadoVideollamada($reservaId, $estado)
+    {
+        $reserva = Reserva::findOrFail($reservaId);
+
+        // evitar updates innecesarios
+        if ($reserva->estado_videollamada === $estado) {
+            return $reserva;
+        }
+
+        // actualizar estado
+        $reserva->estado_videollamada = $estado;
+        $reserva->save();
+
+        return $reserva;
+    }
 }

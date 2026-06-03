@@ -200,4 +200,22 @@ class ReservaController extends Controller
             $result['success'] ? 200 : 400
         );
     }
+
+    // POST /videollamada/{id}/estado
+    public function actualizarEstadoVideollamada($id, Request $request)
+    {
+        $request->validate([
+            "estado" => "required|in:pendiente,en_curso,finalizada"
+        ]);
+
+        $reserva = $this->reservaService->actualizarEstadoVideollamada(
+            $id,
+            $request->estado
+        );
+
+        return response()->json([
+            "success" => true,
+            "data" => $reserva
+        ]);
+    }
 }
