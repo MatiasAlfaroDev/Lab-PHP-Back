@@ -7,8 +7,10 @@ use App\Models\Reserva;
 use App\Models\Servicio;
 use App\Models\User;
 use App\Models\Pago;
+use App\Models\CompraItemPaquete;
 use Illuminate\Http\Request;
 use App\Services\ReservaService;
+
 
 class ReservaController extends Controller
 {
@@ -25,6 +27,7 @@ class ReservaController extends Controller
             'servicio_id' => 'required|integer|exists:servicios,servicio_id',
             'fecha'       => 'required|date_format:Y-m-d',
             'hora'        => 'required|date_format:H:i',
+            'compra_item_paquete_id' => 'nullable|integer',
         ]);
 
         $servicio = Servicio::findOrFail($request->servicio_id);
@@ -35,9 +38,35 @@ class ReservaController extends Controller
             $modalidad = $servicio->modalidad;
         }
 
+        if ($request->compra_item_paquete_id) {
+
+            $item = CompraItemPaquete::with('compraPaquete')
+                ->findOrFail(
+                    $request->compra_item_paquete_id
+                );
+
+            if (
+                $item->compraPaquete->cliente_id !==
+                $request->user()->id
+            ) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Paquete no válido'
+                ], 403);
+            }
+
+            if ($item->sesiones_restantes <= 0) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'No quedan sesiones disponibles'
+                ], 400);
+            }
+        }
+
         $reserva = Reserva::create([
             'cliente_id' => $request->user()->id,
             'servicio_id' => $request->servicio_id,
+            'compra_item_paquete_id' => $request->compra_item_paquete_id,
             'fecha' => $request->fecha,
             'hora' => $request->hora . ':00',
             'estado' => 'pendiente',
@@ -119,6 +148,17 @@ class ReservaController extends Controller
             ], 409);
         }
 
+        if ($reserva->compra_item_paquete_id) {
+
+            $item = CompraItemPaquete::find(
+                $reserva->compra_item_paquete_id
+            );
+
+            if ($item) {
+                $item->increment('sesiones_restantes');
+            }
+        }
+
         $reserva->update(['estado' => 'cancelada']);
 
         return response()->json(['success' => true, 'message' => 'Reserva cancelada']);
@@ -151,7 +191,7 @@ class ReservaController extends Controller
         $reserva->save();
 
         if ($estado === 'confirmada') {
-            if (!$reserva->compra_paquete_id) {
+            if (!$reserva->compra_item_paquete_id) {
 
                 Pago::create([
                     'fecha' => now(),
@@ -159,6 +199,15 @@ class ReservaController extends Controller
                     'estado' => 'pendiente',
                     'reserva_id' => $reserva->reserva_id,
                 ]);
+            } else {
+
+                $item = CompraItemPaquete::find(
+                    $reserva->compra_item_paquete_id
+                );
+
+                if ($item && $item->sesiones_restantes > 0) {
+                    $item->decrement('sesiones_restantes');
+                }
             }
         }
 

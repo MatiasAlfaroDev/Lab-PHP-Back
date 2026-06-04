@@ -62,7 +62,7 @@ class CompraPaqueteService
     {
         return CompraPaquete::with([
             'paquete',
-            'items.itemPaquete',
+            'items.itemPaquete.servicio',
             'pago'
         ])
         ->where('cliente_id', $user->id)
@@ -73,7 +73,7 @@ class CompraPaqueteService
     {
         return CompraPaquete::with([
             'paquete',
-            'items.itemPaquete',
+            'items.itemPaquete.servicio',
             'pago'
         ])
         ->where('cliente_id', $user->id)
