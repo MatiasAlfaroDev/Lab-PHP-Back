@@ -5,15 +5,13 @@ namespace App\Notifications;
 use Illuminate\Bus\Queueable;
 use Illuminate\Notifications\Notification;
 use Illuminate\Notifications\Messages\BroadcastMessage;
-use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
-use Illuminate\Broadcasting\PrivateChannel;
 
-class ReservaNotification extends Notification 
+class ReservaNotification extends Notification
 {
     use Queueable;
 
     public function __construct(
-        public string $type, // "created" | "pending"
+        public string $type,
         public string $message,
         public int $reservaId
     ) {}
@@ -34,6 +32,8 @@ class ReservaNotification extends Notification
 
     public function toBroadcast($notifiable)
     {
+        \Log::info('TO BROADCAST EJECUTADO');
+
         return new BroadcastMessage([
             'type' => $this->type,
             'message' => $this->message,
