@@ -116,5 +116,6 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/mis-compras-paquetes', [CompraPaqueteController::class, 'misPaquetes']);
     Route::get('/mis-paquetes', [PaqueteController::class, 'misPaquetes']);
     Route::get('/compra-paquetes/{id}', [CompraPaqueteController::class, 'show']);
+    Route::delete('/compra-paquetes/{id}', [CompraPaqueteController::class, 'destroy']);
 
 });

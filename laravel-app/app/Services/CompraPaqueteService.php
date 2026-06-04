@@ -80,4 +80,48 @@ class CompraPaqueteService
         ->where('compra_paquete_id', $id)
         ->first();
     }
+
+    public function cancelarCompra($id, $user)
+    {
+        $compra = CompraPaquete::with([
+            'items',
+            'pago'
+        ])
+        ->where('cliente_id', $user->id)
+        ->where('compra_paquete_id', $id)
+        ->first();
+
+        if (!$compra) {
+            return [
+                'success' => false,
+                'message' => 'Compra no encontrada'
+            ];
+        }
+
+        if (
+            $compra->pago &&
+            $compra->pago->estado === 'aprobado'
+        ) {
+            return [
+                'success' => false,
+                'message' => 'No se puede cancelar una compra pagada'
+            ];
+        }
+
+        DB::transaction(function () use ($compra) {
+
+            $compra->items()->delete();
+
+            if ($compra->pago) {
+                $compra->pago()->delete();
+            }
+
+            $compra->delete();
+        });
+
+        return [
+            'success' => true,
+            'message' => 'Compra cancelada correctamente'
+        ];
+    }
 }

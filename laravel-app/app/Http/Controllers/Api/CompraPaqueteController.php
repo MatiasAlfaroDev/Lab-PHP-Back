@@ -55,4 +55,14 @@ class CompraPaqueteController extends Controller
 
         return response()->json($compra);
     }
+
+    public function destroy($id, Request $request)
+    {
+        return response()->json(
+            $this->service->cancelarCompra(
+                $id,
+                $request->user()
+            )
+        );
+    }
 }
