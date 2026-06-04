@@ -69,6 +69,15 @@ class PaqueteService
         return Paquete::with('servicios')->get();
     }
 
+    public function listarMisPaquetes($user)
+    {
+        return Paquete::with('servicios')
+            ->whereHas('servicios', function ($query) use ($user) {
+                $query->where('profesional_id', $user->id);
+            })
+            ->get();
+    }
+
     public function obtenerPaquete($id)
     {
         return Paquete::with('servicios')

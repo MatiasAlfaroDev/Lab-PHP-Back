@@ -38,4 +38,31 @@ class CompraPaqueteController extends Controller
             )
         );
     }
+
+    public function show($id, Request $request)
+    {
+        $compra = $this->service->obtenerCompra(
+            $id,
+            $request->user()
+        );
+
+        if (!$compra) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Compra no encontrada'
+            ], 404);
+        }
+
+        return response()->json($compra);
+    }
+
+    public function destroy($id, Request $request)
+    {
+        return response()->json(
+            $this->service->cancelarCompra(
+                $id,
+                $request->user()
+            )
+        );
+    }
 }

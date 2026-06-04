@@ -126,4 +126,13 @@ class PaqueteController extends Controller
             $response['success'] ? 200 : 404
         );
     }
+
+    public function misPaquetes(Request $request)
+    {
+        return response()->json(
+            $this->paqueteService->listarMisPaquetes(
+                $request->user()
+            )
+        );
+    }
 }
