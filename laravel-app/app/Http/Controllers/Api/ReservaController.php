@@ -63,18 +63,29 @@ class ReservaController extends Controller
             }
         }
 
-        $reserva = Reserva::create([
-            'cliente_id' => $request->user()->id,
-            'servicio_id' => $request->servicio_id,
-            'compra_item_paquete_id' => $request->compra_item_paquete_id,
-            'fecha' => $request->fecha,
-            'hora' => $request->hora . ':00',
-            'estado' => 'pendiente',
-            'modalidad' => $modalidad,
-            'estado_videollamada' => $modalidad === 'virtual'
-                ? 'pendiente'
-                : 'no_aplica',
-        ]);
+        try {
+
+            $reserva = $this->reservaService->crearReserva(
+                $request->user(),
+                [
+                    'servicio_id' => $request->servicio_id,
+                    'compra_item_paquete_id' => $request->compra_item_paquete_id,
+                    'fecha' => $request->fecha,
+                    'hora' => $request->hora,
+                    'modalidad' => $modalidad,
+                    'estado_videollamada' => $modalidad === 'virtual'
+                        ? 'pendiente'
+                        : 'no_aplica',
+                ]
+            );
+
+        } catch (\Exception $e) {
+
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage()
+            ], 409);
+        }
 
         return response()->json([
             'success' => true,
