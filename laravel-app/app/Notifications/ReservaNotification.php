@@ -24,7 +24,7 @@ class ReservaNotification extends Notification
     public function toArray($notifiable)
     {
         return [
-            'type' => $this->type,
+            'type' => 'reserva',
             'message' => $this->message,
             'reserva_id' => $this->reservaId,
         ];
@@ -35,7 +35,7 @@ class ReservaNotification extends Notification
         \Log::info('TO BROADCAST EJECUTADO');
 
         return new BroadcastMessage([
-            'type' => $this->type,
+            'type' => 'reserva',
             'message' => $this->message,
             'reserva_id' => $this->reservaId,
         ]);
