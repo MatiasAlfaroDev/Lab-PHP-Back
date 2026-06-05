@@ -9,12 +9,12 @@ use Illuminate\Support\Facades\DB;
 
 class ReservaService
 {
-   public function crearReserva($user, $data)
+    // CREAR RESERVA no se esta usando
+    public function crearReserva($user, $data)
     {
         return DB::transaction(function () use ($user, $data) {
 
             $hora = $data['hora'] . ':00';
-
             $existe = Reserva::where('servicio_id', $data['servicio_id'])
                 ->where('fecha', $data['fecha'])
                 ->where('hora', $hora)
@@ -27,14 +27,11 @@ class ReservaService
             }
 
             return Reserva::create([
-                'cliente_id' => $user->id,
+                'cliente_id'  => $user->id,
                 'servicio_id' => $data['servicio_id'],
-                'compra_item_paquete_id' => $data['compra_item_paquete_id'] ?? null,
-                'fecha' => $data['fecha'],
-                'hora' => $hora,
-                'estado' => 'pendiente',
-                'modalidad' => $data['modalidad'],
-                'estado_videollamada' => $data['estado_videollamada'],
+                'fecha'       => $data['fecha'],
+                'hora'        => $hora,
+                'estado'      => 'pendiente',
             ]);
         });
     }
