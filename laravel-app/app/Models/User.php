@@ -48,9 +48,4 @@ class User extends Authenticatable
         return $this->hasOne(Cliente::class, 'user_id');
     }
 
-    public function receivesBroadcastNotificationsOn(): string
-    {
-    return 'user.' . $this->id;
-    }
-
 }
