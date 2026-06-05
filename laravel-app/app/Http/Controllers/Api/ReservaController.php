@@ -10,7 +10,7 @@ use App\Models\Pago;
 use App\Models\CompraItemPaquete;
 use Illuminate\Http\Request;
 use App\Services\ReservaService;
-
+use App\Notifications\ReservaNotification;
 
 class ReservaController extends Controller
 {
@@ -21,8 +21,10 @@ class ReservaController extends Controller
         $this->reservaService = $reservaService;
     }
     // POST /reservas
+
     public function store(Request $request)
     {
+
         $request->validate([
             'servicio_id' => 'required|integer|exists:servicios,servicio_id',
             'fecha'       => 'required|date_format:Y-m-d',
@@ -30,14 +32,16 @@ class ReservaController extends Controller
             'compra_item_paquete_id' => 'nullable|integer',
         ]);
 
+        
+        // 🔥 Servicio
         $servicio = Servicio::findOrFail($request->servicio_id);
 
+        // 🔥 Modalidad (NO TOCAR tu lógica)
         if ($servicio->modalidad === 'hibrido') {
             $modalidad = $request->modalidad;
         } else {
             $modalidad = $servicio->modalidad;
         }
-
         if ($request->compra_item_paquete_id) {
 
             $item = CompraItemPaquete::with('compraPaquete')
@@ -63,18 +67,53 @@ class ReservaController extends Controller
             }
         }
 
-        $reserva = Reserva::create([
-            'cliente_id' => $request->user()->id,
-            'servicio_id' => $request->servicio_id,
-            'compra_item_paquete_id' => $request->compra_item_paquete_id,
-            'fecha' => $request->fecha,
-            'hora' => $request->hora . ':00',
-            'estado' => 'pendiente',
-            'modalidad' => $modalidad,
-            'estado_videollamada' => $modalidad === 'virtual'
-                ? 'pendiente'
-                : 'no_aplica',
-        ]);
+        try {
+
+            $reserva = $this->reservaService->crearReserva(
+                $request->user(),
+                [
+                    'servicio_id' => $request->servicio_id,
+                    'compra_item_paquete_id' => $request->compra_item_paquete_id,
+                    'fecha' => $request->fecha,
+                    'hora' => $request->hora,
+                    'modalidad' => $modalidad,
+                    'estado_videollamada' => $modalidad === 'virtual'
+                        ? 'pendiente'
+                        : 'no_aplica',
+                ]
+            );
+
+        } catch (\Exception $e) {
+
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage()
+            ], 409);
+        }
+
+
+
+        // 🔥 Usuarios
+        $cliente = $request->user();
+        $profesional = User::findOrFail($servicio->profesional_id);
+
+        // =========================================================
+        // 🔔 NOTIFICACIÓN 1: PROFESIONAL
+        // =========================================================
+        $profesional->notify(new ReservaNotification(
+            'created',
+            "{$cliente->name} realizó una reserva para el servicio: {$servicio->nombre}",
+            $reserva->reserva_id
+        ));
+
+        // =========================================================
+        // 🔔 NOTIFICACIÓN 2: CLIENTE
+        // =========================================================
+        $cliente->notify(new ReservaNotification(
+            'pending',
+            "Tu reserva quedó pendiente de aprobación por el profesional",
+            $reserva->reserva_id
+        ));
 
         return response()->json([
             'success' => true,
