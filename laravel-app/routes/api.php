@@ -72,10 +72,6 @@ Route::middleware('auth:sanctum')->group(function () {
 
     Route::get('/mis-servicios', [ServicioController::class, 'misServicios']);
 
-    Route::middleware('auth:sanctum')->group(function () {
-    Route::post('/reservas', [ReservaController::class, 'store']);
-});
-
     // Reservas
     Route::post('/reservas',              [ReservaController::class, 'store']);
     Route::get('/mis-reservas',           [ReservaController::class, 'misReservas']);
