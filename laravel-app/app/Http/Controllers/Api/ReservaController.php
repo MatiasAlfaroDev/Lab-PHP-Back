@@ -72,7 +72,7 @@ public function store(Request $request)
     // =========================================================
     $cliente->notify(new ReservaNotification(
         'pending',
-        "Tu reserva quedó pendiente de aprobación por el profesional",
+        "Tu reserva quedó pendiente de aprobación por el profesional: {$profesional->name} para el servicio: {$servicio->nombre}",
         $reserva->reserva_id
     ));
 
