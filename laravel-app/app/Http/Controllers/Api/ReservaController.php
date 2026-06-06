@@ -106,14 +106,14 @@ class ReservaController extends Controller
             $reserva->reserva_id
         ));
 
-        // =========================================================
-        // 🔔 NOTIFICACIÓN 2: CLIENTE
-        // =========================================================
-        $cliente->notify(new ReservaNotification(
-            'pending',
-            "Tu reserva quedó pendiente de aprobación por el profesional",
-            $reserva->reserva_id
-        ));
+    // =========================================================
+    // 🔔 NOTIFICACIÓN 2: CLIENTE
+    // =========================================================
+    $cliente->notify(new ReservaNotification(
+        'pending',
+        "Tu reserva quedó pendiente de aprobación por el profesional: {$profesional->name} para el servicio: {$servicio->nombre}",
+        $reserva->reserva_id
+    ));
 
         return response()->json([
             'success' => true,
