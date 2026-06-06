@@ -13,6 +13,7 @@ use App\Http\Controllers\Api\ClienteController;
 use App\Http\Controllers\Api\CompraPaqueteController;
 use App\Http\Controllers\Api\GeocodingController;
 use App\Http\Controllers\Api\VideoCallController;
+use App\Http\Controllers\Api\NotificationController;
 
 /*
 |--------------------------------------------------------------------------
@@ -74,7 +75,7 @@ Route::middleware('auth:sanctum')->group(function () {
 
     Route::middleware('auth:sanctum')->group(function () {
     Route::post('/reservas', [ReservaController::class, 'store']);
-});
+    });
 
     // Reservas
     Route::post('/reservas',              [ReservaController::class, 'store']);
@@ -99,7 +100,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::middleware('auth:sanctum')->get(
     '/clientes',
     [ClienteController::class, 'index']
-);
+    );
 
     /*
     |------------------------------------------
@@ -122,4 +123,12 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/compra-paquetes/{id}', [CompraPaqueteController::class, 'show']);
     Route::delete('/compra-paquetes/{id}', [CompraPaqueteController::class, 'destroy']);
 
+
+    Route::middleware('auth:sanctum')->group(function () {
+
+    Route::get('/notificaciones', [NotificationController::class, 'index']);
+    Route::get('/notificaciones/no-leidas', [NotificationController::class, 'noLeidas']);
+    Route::post('/notificaciones/{id}/leer', [NotificationController::class, 'marcarComoLeida']);
+    Route::post('/notificaciones/leer-todas', [NotificationController::class, 'marcarTodasComoLeidas']);
+});
 });
