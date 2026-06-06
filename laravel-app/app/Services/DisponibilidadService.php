@@ -42,13 +42,32 @@ class DisponibilidadService
     public function bulkUpdate(int $servicioId, array $nuevas, $user): array
     {
         $servicio = Servicio::find($servicioId);
-
         if (!$servicio) {
             return ['success' => false, 'message' => 'Servicio no encontrado'];
         }
 
         if ((int)$servicio->profesional_id !== (int)$user->id) {
             return ['success' => false, 'message' => 'No tenés permiso para modificar este servicio'];
+        }
+        $otrosServicios = Servicio::where(
+            'profesional_id',
+            $servicio->profesional_id
+        )
+        ->where('servicio_id', '!=', $servicioId)
+        ->pluck('servicio_id');
+        foreach ($nuevas as $d) {
+            $solapada = Disponibilidad::whereIn('servicio_id', $otrosServicios)
+                ->where('dia_semana', $d['dia_semana'])
+                ->where('hora_inicio', '<', $d['hora_fin'])
+                ->where('hora_fin', '>', $d['hora_inicio'])
+                ->exists();
+
+            if ($solapada) {
+                return [
+                    'success' => false,
+                    'message' => 'Ya existe una disponibilidad en ese horario para otro servicio'
+                ];
+            }
         }
 
         Disponibilidad::where('servicio_id', $servicioId)->delete();
