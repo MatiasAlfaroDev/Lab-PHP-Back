@@ -14,6 +14,7 @@ use App\Http\Controllers\Api\CompraPaqueteController;
 use App\Http\Controllers\Api\GeocodingController;
 use App\Http\Controllers\Api\VideoCallController;
 use App\Http\Controllers\Api\NotificationController;
+use App\Http\Controllers\Api\ExcepcionController;
 
 /*
 |--------------------------------------------------------------------------
@@ -89,6 +90,9 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // Disponibilidad (protegido)
     Route::put('/servicios/{id}/disponibilidad', [DisponibilidadController::class, 'bulkUpdate']);
+    Route::get('/excepciones', [ExcepcionController::class, 'index']);
+    Route::post('/excepciones', [ExcepcionController::class, 'store']);
+    Route::delete('/excepciones/{id}', [ExcepcionController::class, 'destroy']);
 
     /*
     |------------------------------------------

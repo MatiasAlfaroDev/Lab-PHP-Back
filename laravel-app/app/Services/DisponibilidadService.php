@@ -6,6 +6,7 @@ use App\Helpers\FeriadoHelper;
 use App\Models\Disponibilidad;
 use App\Models\Reserva;
 use App\Models\Servicio;
+use App\Models\Excepcion;
 use Carbon\Carbon;
 
 class DisponibilidadService
@@ -108,7 +109,9 @@ class DisponibilidadService
         if ($bloques->isEmpty()) {
             return ['success' => true, 'data' => []];
         }
-
+        $excepciones = Excepcion::where('profesional_id', $servicio->profesional_id)
+            ->where('fecha', $fecha)
+            ->get();
         // Reservas existentes (no canceladas) para este servicio en esta fecha
         $reservadas = Reserva::where('servicio_id', $servicioId)
             ->where('fecha', $fecha)
@@ -131,7 +134,46 @@ class DisponibilidadService
 
                 $slotStr = $cursor->format('H:i');
 
-                if (!in_array($slotStr, $reservadas)) {
+                $bloqueado = false;
+
+                foreach ($excepciones as $excepcion) {
+
+                    // Día completo bloqueado
+                    if (
+                        is_null($excepcion->hora_inicio) &&
+                        is_null($excepcion->hora_fin)
+                    ) {
+                        $bloqueado = true;
+                        break;
+                    }
+
+                    // Horario bloqueado
+                    if (
+                        !is_null($excepcion->hora_inicio) &&
+                        !is_null($excepcion->hora_fin)
+                    ) {
+                        $inicioExcepcion = Carbon::parse(
+                            $fecha . ' ' . $excepcion->hora_inicio
+                        );
+
+                        $finExcepcion = Carbon::parse(
+                            $fecha . ' ' . $excepcion->hora_fin
+                        );
+
+                        if (
+                            $cursor->lt($finExcepcion) &&
+                            $slotFin->gt($inicioExcepcion)
+                        ) {
+                            $bloqueado = true;
+                            break;
+                        }
+                    }
+                }
+
+                if (
+                    !in_array($slotStr, $reservadas) &&
+                    !$bloqueado
+                ) {
                     $slots[] = [
                         'hora' => $slotStr,
                         'modalidad' => $bloque->modalidad
