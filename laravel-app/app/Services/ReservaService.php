@@ -11,6 +11,8 @@ class ReservaService
 {
    public function crearReserva($user, $data)
     {
+            logger($data);
+
         return DB::transaction(function () use ($user, $data) {
 
             $hora = $data['hora'] . ':00';

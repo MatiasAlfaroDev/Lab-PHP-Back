@@ -54,7 +54,7 @@ class NotificationService
     public function marcarTodasComoLeidas($usuario)
     {
         $usuario
-            ->unreadNotifications()
+            ->unreadNotifications
             ->markAsRead();
 
         return [

@@ -132,7 +132,7 @@ Route::middleware('auth:sanctum')->group(function () {
 
     Route::get('/notificaciones', [NotificationController::class, 'index']);
     Route::get('/notificaciones/no-leidas', [NotificationController::class, 'noLeidas']);
-    Route::post('/notificaciones/{id}/leer', [NotificationController::class, 'marcarComoLeida']);
-    Route::post('/notificaciones/leer-todas', [NotificationController::class, 'marcarTodasComoLeidas']);
+    Route::post('/notificaciones/{id}/leer', [NotificationController::class, 'leer']);
+    Route::post('/notificaciones/leer-todas', [NotificationController::class, 'leerTodas']);
 });
 });
