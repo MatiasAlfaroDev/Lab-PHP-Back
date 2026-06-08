@@ -125,7 +125,7 @@ class ReservaController extends Controller
     public function misReservas(Request $request)
     {
         $reservas = Reserva::where('cliente_id', $request->user()->id)
-            ->with(['servicio', 'pago'])
+            ->with(['servicio', 'pago', 'calificacion'])
             ->orderByDesc('fecha')
             ->orderByDesc('hora')
             ->get()

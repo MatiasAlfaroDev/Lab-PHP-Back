@@ -45,7 +45,7 @@ class ReservaService
     public function misReservas($user)
     {
         return Reserva::where('cliente_id', $user->id)
-            ->with(['servicio', 'pago'])
+            ->with(['servicio', 'pago', 'calificacion'])
             ->orderByDesc('fecha')
             ->orderByDesc('hora')
             ->get()

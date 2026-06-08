@@ -15,6 +15,7 @@ use App\Http\Controllers\Api\GeocodingController;
 use App\Http\Controllers\Api\VideoCallController;
 use App\Http\Controllers\Api\NotificationController;
 use App\Http\Controllers\Api\ExcepcionController;
+use App\Http\Controllers\Api\CalificacionController;
 
 /*
 |--------------------------------------------------------------------------
@@ -87,6 +88,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::put('/reservas/{id}/estado', [ReservaController::class, 'cambiarEstado']);
     Route::put('/reservas/{id}/no-asistida', [ReservaController::class, 'noAsistida']);
     Route::post('/reservas/{id}/pago-presencial', [PagoController::class, 'confirmarPresencial']);
+    Route::post('/reservas/{reservaId}/calificar',[CalificacionController::class, 'crear']);
+    Route::get('/profesionales/{id}/calificaciones', [CalificacionController::class, 'listarPorProfesional']);
 
     // Disponibilidad (protegido)
     Route::put('/servicios/{id}/disponibilidad', [DisponibilidadController::class, 'bulkUpdate']);
