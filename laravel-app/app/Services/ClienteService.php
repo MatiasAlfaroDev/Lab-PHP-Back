@@ -33,36 +33,31 @@ class ClienteService
                     ->whereHas('servicio', function ($query) use ($profesionalId) {
                         $query->where('profesional_id', $profesionalId);
                     })
-                    ->whereDate('fecha', '>=', now())
+                    ->whereNotIn('estado', ['cancelada', 'finalizada', 'no_asistida'])
+                    ->where(function ($q) {
+                        $q->where('fecha', '>', now()->toDateString())
+                        ->orWhere(function ($q) {
+                            $q->whereDate('fecha', now()->toDateString())
+                                ->where('hora', '>=', now()->format('H:i:s'));
+                        });
+                    })
                     ->orderBy('fecha')
                     ->orderBy('hora')
                     ->first();
 
-                $estado = 'ACTIVA';
-
                 if ($proximaReserva &&
                     $proximaReserva->fecha == now()->toDateString()) {
-                    $estado = 'EN SESION';
                 }
 
                 $clientes[$clienteId] = [
                     'cliente_id' => $clienteId,
                     'nombre' => $reserva->cliente->user->name,
                     'email' => $reserva->cliente->user->email,
-
-                    // si no viene de paquete queda 0
-                    'sesiones_restantes' =>
-                        $reserva->compraItemPaquete->sesiones_restantes ?? 0,
-
-                    'proxima_sesion' => $proximaReserva
-                        ? $proximaReserva->fecha
-                        : null,
-
-                    'hora_proxima_sesion' => $proximaReserva
-                        ? $proximaReserva->hora
-                        : null,
-
-                    'estado' => $estado
+                    'sesiones_restantes' => $reserva->compraItemPaquete->sesiones_restantes ?? 0,
+                    'proxima_sesion' => $proximaReserva?->fecha,
+                    'hora_proxima_sesion' => $proximaReserva?->hora,
+                    'tiene_turnos' => $proximaReserva !== null,
+                    'estado' => $proximaReserva?->estado,    
                 ];
             }
         }
