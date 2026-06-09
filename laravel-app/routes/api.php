@@ -64,6 +64,10 @@ Route::middleware('auth:sanctum')->group(function () {
     */
     Route::get('/me', [UserController::class, 'me']);
     Route::post('/logout', [UserController::class, 'logout']);
+    Route::put('/profile/password', [UserController::class, 'updatePassword']);
+    Route::put('/profesional/profile', [ProfesionalController::class, 'updateProfile']);
+    Route::put('/client/profile', [ClienteController::class, 'updateProfile']);
+
 
     /*
     |------------------------------------------

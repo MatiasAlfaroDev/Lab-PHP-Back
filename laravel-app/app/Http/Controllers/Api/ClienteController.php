@@ -26,4 +26,25 @@ class ClienteController extends Controller
 
         return response()->json($clientes);
     }
+
+    public function updateProfile(Request $request)
+    {
+        $user = auth()->user();
+
+        if (!$user || $user->role !== 'client') {
+            return response()->json([
+                'success' => false,
+                'message' => 'No autorizado'
+            ], 403);
+        }
+
+        $data = $request->validate([
+            'name' => 'required|string',
+            'email' => 'required|email',
+        ]);
+
+        return response()->json(
+            $this->clienteService->updateProfile($user, $data)
+        );
+    }
 }

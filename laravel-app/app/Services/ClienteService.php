@@ -4,7 +4,7 @@ namespace App\Services;
 
 use App\Models\Reserva;
 use Carbon\Carbon;
-
+use Illuminate\Support\Facades\DB;
 class ClienteService
 {
     public function getClientesDelProfesional(int $profesionalId)
@@ -68,5 +68,33 @@ class ClienteService
         }
 
         return array_values($clientes);
+    }
+
+    public function updateProfile($user, array $data)
+    {
+        DB::beginTransaction();
+
+        try {
+            $user->update([
+                'name' => $data['name'],
+                'email' => $data['email'],
+            ]);
+
+            DB::commit();
+
+            return [
+                'success' => true,
+                'message' => 'Perfil de cliente actualizado correctamente',
+                'data' => $user
+            ];
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+
+            return [
+                'success' => false,
+                'message' => 'Error al actualizar perfil'
+            ];
+        }
     }
 }

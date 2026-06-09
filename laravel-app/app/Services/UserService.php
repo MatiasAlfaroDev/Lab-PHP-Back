@@ -124,4 +124,30 @@ class UserService
             'token' => $token
         ];
     }
+
+    public function updatePassword($user, array $data)
+    {
+        if (!Hash::check($data['current_password'], $user->password)) {
+            return [
+                'success' => false,
+                'message' => 'Contraseña actual incorrecta'
+            ];
+        }
+
+        if (strlen($data['password']) < 8) {
+            return [
+                'success' => false,
+                'message' => 'La contraseña debe tener al menos 8 caracteres'
+            ];
+        }
+
+        $user->update([
+            'password' => Hash::make($data['password'])
+        ]);
+
+        return [
+            'success' => true,
+            'message' => 'Contraseña actualizada correctamente'
+        ];
+    }
 }
