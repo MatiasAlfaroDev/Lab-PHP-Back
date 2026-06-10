@@ -158,7 +158,9 @@ class ServicioService
         $servicios = Servicio::where(
             'profesional_id',
             $profesional->user_id
-        )->get();
+        )
+        ->withCount('reservas')
+        ->get();
 
         return [
             'success' => true,
