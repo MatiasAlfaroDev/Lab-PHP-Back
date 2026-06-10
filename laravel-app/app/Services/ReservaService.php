@@ -6,6 +6,7 @@ use App\Models\Reserva;
 use App\Models\Servicio;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
+use Carbon\Carbon;
 
 class ReservaService
 {
@@ -173,6 +174,22 @@ class ReservaService
                 return [
                     'success' => false,
                     'message' => 'Solo se pueden reprogramar reservas confirmadas o pagadas'
+                ];
+            }
+
+            $servicio = $reserva->servicio;
+            $minHoras = $servicio->min_cancelacion ?? 0;
+
+            $fechaHoraReserva = \Carbon\Carbon::parse(
+                $reserva->fecha . ' ' . substr($reserva->hora, 0, 5)
+            );
+
+            $limite = now()->addHours($minHoras);
+
+            if ($fechaHoraReserva->lessThanOrEqualTo($limite)) {
+                return [
+                    'success' => false,
+                    'message' => "No podés reprogramar con menos de {$minHoras} horas de anticipación"
                 ];
             }
 
