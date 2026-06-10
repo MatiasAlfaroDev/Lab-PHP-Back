@@ -39,30 +39,5 @@ class ProfesionalService
         }
     }
 
-    public function reprogramar(int $reservaId, string $fecha, string $hora): array
-    {
-        return DB::transaction(function () use ($reservaId, $fecha, $hora) {
-
-            $reserva = Reserva::findOrFail($reservaId);
-
-            // solo se puede reprogramar si está confirmada o pagada
-            if (!in_array($reserva->estado, ['confirmada', 'pagada'])) {
-                return [
-                    'success' => false,
-                    'message' => 'Solo se pueden reprogramar reservas confirmadas o pagadas'
-                ];
-            }
-
-            $reserva->update([
-                'fecha' => $fecha,
-                'hora' => $hora 
-            ]);
-
-            return [
-                'success' => true,
-                'message' => 'Reserva reprogramada correctamente',
-                'data' => $reserva
-            ];
-        });
-    }
+    
 }
