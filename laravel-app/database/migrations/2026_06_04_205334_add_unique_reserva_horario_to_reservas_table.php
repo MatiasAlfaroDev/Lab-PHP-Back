@@ -12,11 +12,13 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('reservas', function (Blueprint $table) {
-            $table->unique(
-                ['servicio_id', 'fecha', 'hora'],
-                'uq_reserva_horario'
-            );
+            $table->dropUnique('uq_reserva_horario');
         });
+        DB::statement("
+            CREATE UNIQUE INDEX uq_reserva_horario
+            ON reservas (servicio_id, fecha, hora)
+            WHERE estado != 'cancelada'
+        ");
     }
 
     /**

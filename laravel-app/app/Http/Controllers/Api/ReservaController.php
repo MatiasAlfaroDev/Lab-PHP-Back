@@ -166,9 +166,9 @@ class ReservaController extends Controller
     {
         $reserva = Reserva::findOrFail($id);
 
-        if ((int) $reserva->cliente_id !== (int) $request->user()->id) {
-            return response()->json(['success' => false, 'message' => 'No autorizado'], 403);
-        }
+        $user = $request->user();
+        $isCliente = (int) $reserva->cliente_id === (int) $user->id;
+        $isProfesional = (int) $reserva->profesional_id === (int) $user->id;    
 
         if (in_array($reserva->estado, ['cancelada', 'finalizada', 'no_asistida'])) {
             return response()->json(['success' => false, 'message' => 'No se puede cancelar esta reserva'], 409);
@@ -305,5 +305,26 @@ class ReservaController extends Controller
             "success" => true,
             "data" => $reserva
         ]);
+    }
+
+    // PUT /reservas/{id}/reprogramar
+    public function reprogramar(Request $request, int $id)
+    {
+        $request->validate([
+            'fecha' => 'required|date',
+            'hora'  => 'required'
+        ]);
+
+        $result = $this->reservaService->reprogramar(
+            $id,
+            $request->fecha,
+            $request->hora
+        );
+
+        if (!$result['success']) {
+            return response()->json($result, 409);
+        }
+
+        return response()->json($result, 200);
     }
 }
