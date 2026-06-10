@@ -16,6 +16,9 @@
         "APP_PACKAGES_CACHE": "/tmp/packages.php",
         "APP_ROUTES_CACHE": "/tmp/routes.php",
         "APP_SERVICES_CACHE": "/tmp/services.php",
-        "VIEW_COMPILED_PATH": "/tmp"
+        "VIEW_COMPILED_PATH": "/tmp",
+        "CORS_ALLOWED_ORIGINS": "https://lab-php-front.vercel.app,http://localhost:5173",
+        "LOG_CHANNEL": "stderr",
+        "SESSION_DRIVER": "cookie"
     }
 }
