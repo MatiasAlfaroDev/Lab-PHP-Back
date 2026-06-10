@@ -13,20 +13,26 @@ class ReservaNotification extends Notification
     public function __construct(
         public string $type,
         public string $message,
-        public int $reservaId
+        public string $fecha,
+        public string $hora,
     ) {}
 
     public function via($notifiable)
     {
+            \Log::info('VIA EJECUTADO');
+
         return ['database', 'broadcast'];
     }
 
     public function toDatabase($notifiable)
     {
+            \Log::info('TO DATABASE EJECUTADO');
+
         return [
             'type' => $this->type,
             'message' => $this->message,
-            'reserva_id' => $this->reservaId,
+            'fecha' => $this->fecha,
+            'hora' => $this->hora,
         ];
     }
 
@@ -37,7 +43,8 @@ class ReservaNotification extends Notification
         return new BroadcastMessage([
             'type' => $this->type,
             'message' => $this->message,
-            'reserva_id' => $this->reservaId,
+            'fecha' => $this->fecha,
+            'hora' => $this->hora,
         ]);
     }
 }
