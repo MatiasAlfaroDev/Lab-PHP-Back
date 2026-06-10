@@ -188,4 +188,14 @@ class ReservaService
             ];
         });
     }
+
+    public function getById(int $id)
+    {
+        return Reserva::with([
+            'servicio',
+            'cliente',
+            'compraItemPaquete',
+            'servicio.profesional'
+        ])->find($id);
+    }
 }

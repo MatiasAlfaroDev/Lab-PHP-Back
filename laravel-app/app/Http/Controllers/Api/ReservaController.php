@@ -327,4 +327,21 @@ class ReservaController extends Controller
 
         return response()->json($result, 200);
     }
+
+    public function show($id)
+    {
+        $reserva = $this->reservaService->getById($id);
+
+        if (!$reserva) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Reserva no encontrada'
+            ], 404);
+        }
+
+        return response()->json([
+            'success' => true,
+            'data' => $reserva
+        ]);
+    }
 }

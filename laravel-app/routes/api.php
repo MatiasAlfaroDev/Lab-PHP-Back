@@ -95,6 +95,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/reservas/{reservaId}/calificar',[CalificacionController::class, 'crear']);
     Route::get('/profesionales/{id}/calificaciones', [CalificacionController::class, 'listarPorProfesional']);
     Route::put('/reservas/{id}/reprogramar', [ReservaController::class, 'reprogramar'] );
+    Route::get('/reservas/{id}', [ReservaController::class, 'show']);
 
     // Disponibilidad (protegido)
     Route::put('/servicios/{id}/disponibilidad', [DisponibilidadController::class, 'bulkUpdate']);
