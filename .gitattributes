@@ -9,3 +9,11 @@
 /.github export-ignore
 CHANGELOG.md export-ignore
 .styleci.yml export-ignore
+
+# Archivos de configuracion de despliegue: al mergear development -> main,
+# siempre se conserva la version de main (produccion en Vercel).
+# Requiere `git config merge.ours.driver true` (una vez por clon local).
+vercel.json merge=ours
+api/index.php merge=ours
+config/cors.php merge=ours
+.gitignore merge=ours
