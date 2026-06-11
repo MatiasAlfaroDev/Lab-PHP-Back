@@ -88,7 +88,7 @@ class UserController extends Controller
         $response = $this->userService->handleGoogleLogin($request->input('state'));
 
         return redirect(
-            'http://localhost:5173/auth/google/callback?' .
+            env('FRONTEND_URL', 'http://localhost:5173') . '/auth/google/callback?' .
             http_build_query([
                 'token' => $response['token'],
                 'id' => $response['user']->id,
