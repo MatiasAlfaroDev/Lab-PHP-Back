@@ -101,18 +101,18 @@ class ReservaController extends Controller
         // 🔔 NOTIFICACIÓN 1: PROFESIONAL
         // =========================================================
         $profesional->notify(new ReservaNotification(
-            'created',
+            'Reserva ',
             "{$cliente->name} realizó una reserva para el servicio: {$servicio->nombre}",
-            $reserva->reserva_id
+            $reserva->fecha, $reserva->hora
         ));
 
     // =========================================================
     // 🔔 NOTIFICACIÓN 2: CLIENTE
     // =========================================================
     $cliente->notify(new ReservaNotification(
-        'pending',
-        "Tu reserva quedó pendiente de aprobación por el profesional: {$profesional->name} para el servicio: {$servicio->nombre}",
-        $reserva->reserva_id
+        'Reserva pendiente',
+        "Tu reserva para el servicio: {$servicio->nombre} quedó pendiente de aprobación por el profesional: {$profesional->name} ",
+        $reserva->fecha, $reserva->hora
     ));
 
         return response()->json([
@@ -162,100 +162,178 @@ class ReservaController extends Controller
     }
 
     // PUT /reservas/{id}/cancelar
-    public function cancel(Request $request, $id)
-    {
-        $reserva = Reserva::findOrFail($id);
+   // PUT /reservas/{id}/cancelar
+public function cancel(Request $request, $id)
+{
+    $reserva = Reserva::with('servicio')->findOrFail($id);
 
-        $user = $request->user();
-        $isCliente = (int) $reserva->cliente_id === (int) $user->id;
-        $isProfesional = (int) $reserva->profesional_id === (int) $user->id;    
+    $user = $request->user();
+    $isCliente = (int) $reserva->cliente_id === (int) $user->id;
 
-        if (in_array($reserva->estado, ['cancelada', 'finalizada', 'no_asistida'])) {
-            return response()->json(['success' => false, 'message' => 'No se puede cancelar esta reserva'], 409);
+    $isProfesional = isset($reserva->profesional_id)
+        ? (int) $reserva->profesional_id === (int) $user->id
+        : false;
+
+    if (in_array($reserva->estado, ['cancelada', 'finalizada', 'no_asistida'])) {
+        return response()->json([
+            'success' => false,
+            'message' => 'No se puede cancelar esta reserva'
+        ], 409);
+    }
+
+    $minHoras = $reserva->servicio->min_cancelacion ?? 0;
+
+    $fechaHoraReserva = \Carbon\Carbon::parse(
+        $reserva->fecha . ' ' . substr($reserva->hora, 0, 5)
+    );
+
+    $limiteCancelacion = now()->addHours($minHoras);
+
+    if ($fechaHoraReserva->lessThan($limiteCancelacion)) {
+        return response()->json([
+            'success' => false,
+            'message' => "No podés cancelar con menos de {$minHoras} horas de anticipación"
+        ], 409);
+    }
+
+    if ($reserva->compra_item_paquete_id) {
+
+        $item = CompraItemPaquete::find(
+            $reserva->compra_item_paquete_id
+        );
+
+        if ($item) {
+            $item->increment('sesiones_restantes');
         }
+    }
+    $cliente = User::findOrFail($reserva->cliente_id);   
+    $servicio = Servicio::findOrFail($reserva->servicio_id);
+    $profesional = User::findOrFail($servicio->profesional_id);
 
-        // MIN_CANCELACION CHECK
-        $minHoras = $reserva->servicio->min_cancelacion ?? 0;
+    if ($isCliente) {
+        $profesional->notify(new ReservaNotification(
+            'Reserva Cancelada',
+            "{$cliente->name} canceló una reserva para el servicio: {$servicio->nombre}",
+            $reserva->fecha,
+            $reserva->hora
+        ));
+        $cliente->notify(new ReservaNotification(
+            'Reserva Cancelada',
+            "Has cancelado tu reserva  para el servicio: {$servicio->nombre} con el profesional: {$profesional->name}",
+            $reserva->fecha,
+            $reserva->hora
+        ));
 
-        $fechaHoraReserva = \Carbon\Carbon::parse($reserva->fecha . ' ' . substr($reserva->hora, 0, 5));
-        $limiteCancelacion = now()->addHours($minHoras);
+    } elseif ($isProfesional) {
 
-        if ($fechaHoraReserva->lessThan($limiteCancelacion)) {
-            return response()->json([
-                'success' => false,
-                'message' => "No podés cancelar con menos de {$minHoras} horas de anticipación"
-            ], 409);
-        }
+        $cliente->notify(new ReservaNotification(
+            'Reserva Cancelada',
+            "Tu reserva para el servicio: {$servicio->nombre} fue cancelada por el profesional: {$profesional->name}",
+            $reserva->fecha,
+            $reserva->hora
+        ));
+        $profesional->notify(new ReservaNotification(
+            'Reserva Cancelada',
+            "Has cancelado una reserva para el servicio: {$servicio->nombre} con el cliente: {$cliente->name} ",
+            $reserva->fecha,
+            $reserva->hora
+        ));
 
-        if ($reserva->compra_item_paquete_id) {
+    } 
 
+    $reserva->update([
+        'estado' => 'cancelada'
+    ]);
+
+    return response()->json([
+        'success' => true,
+        'message' => 'Reserva cancelada'
+    ]);
+}
+
+    // PUT /reservas/{id}/estado
+   public function cambiarEstado(Request $request, $id)
+{
+    
+    $reserva = Reserva::with('servicio')->findOrFail($id);
+    $cliente = User::findOrFail($reserva->cliente_id);
+    $servicio = Servicio::findOrFail($reserva->servicio_id);
+    $profesional = User::findOrFail($servicio->profesional_id);
+    $estado = $request->estado;
+
+    $estadosValidos = ['confirmada', 'cancelada'];
+
+    if (!in_array($estado, $estadosValidos)) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Estado no válido'
+        ], 400);
+    }
+
+    if ($reserva->estado !== 'pendiente') {
+        return response()->json([
+            'success' => false,
+            'message' => 'Solo se pueden modificar reservas pendientes'
+        ], 400);
+    }
+
+    $reserva->estado = $estado;
+    $reserva->save();
+    if ($estado === 'confirmada') {
+        if (!$reserva->compra_item_paquete_id) {
+            Pago::create([
+                'fecha' => now(),
+                'monto' => $reserva->servicio->precio,
+                'estado' => 'pendiente',
+                'reserva_id' => $reserva->reserva_id,
+            ]);
+
+            $cliente->notify(new ReservaNotification(
+                'Reserva Confirmada',
+                "Tu reserva  para el servicio: {$servicio->nombre} con el profesional: {$profesional->name} fue confirmada",
+                $reserva->fecha,
+                $reserva->hora
+            ));
+
+            $profesional->notify(new ReservaNotification(
+                'Reserva Confirmada',
+                "Has confirmado una reserva para el servicio: {$servicio->nombre} con el cliente: {$cliente->name} ",
+                $reserva->fecha,
+                $reserva->hora
+            ));
+
+        } else {
             $item = CompraItemPaquete::find(
                 $reserva->compra_item_paquete_id
             );
 
-            if ($item) {
-                $item->increment('sesiones_restantes');
+            if ($item && $item->sesiones_restantes > 0) {
+    
+                $item->decrement('sesiones_restantes');
+
             }
         }
-
-        $reserva->update(['estado' => 'cancelada']);
-
-        return response()->json(['success' => true, 'message' => 'Reserva cancelada']);
     }
+    if ($estado === 'cancelada') {
+        $cliente->notify(new ReservaNotification(
+            'Reserva Cancelada',
+            "Tu reserva para el servicio: {$servicio->nombre}, con el profesional: {$profesional->name} fue cancelada ",
+            $reserva->fecha,
+            $reserva->hora
+        ));
+        $profesional->notify(new ReservaNotification(
+            'Reserva Cancelada',
+            "Has cancelado una reserva para el servicio: {$servicio->nombre} con el cliente: {$cliente->name} ",
+            $reserva->fecha,
+            $reserva->hora
+        ));
 
-    // PUT /reservas/{id}/estado
-    public function cambiarEstado(Request $request, $id)
-    {
-         $reserva = Reserva::with('servicio')->findOrFail($id);
-
-        $estado = $request->estado;
-
-        $estadosValidos = ['confirmada', 'cancelada'];
-
-        if (!in_array($estado, $estadosValidos)) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Estado no válido'
-            ], 400);
-        }
-
-        if ($reserva->estado !== 'pendiente') {
-            return response()->json([
-                'success' => false,
-                'message' => 'Solo se pueden modificar reservas pendientes'
-            ], 400);
-        }
-
-        $reserva->estado = $estado;
-        $reserva->save();
-
-        if ($estado === 'confirmada') {
-            if (!$reserva->compra_item_paquete_id) {
-
-                Pago::create([
-                    'fecha' => now(),
-                    'monto' => $reserva->servicio->precio,
-                    'estado' => 'pendiente',
-                    'reserva_id' => $reserva->reserva_id,
-                ]);
-            } else {
-
-                $item = CompraItemPaquete::find(
-                    $reserva->compra_item_paquete_id
-                );
-
-                if ($item && $item->sesiones_restantes > 0) {
-                    $item->decrement('sesiones_restantes');
-                }
-            }
-        }
-
-        return response()->json([
-            'success' => true,
-            'data' => $reserva
-        ]);
     }
-
+    return response()->json([
+        'success' => true,
+        'data' => $reserva
+    ]);
+}
     // GET /reservas/pendientes (profesional)
     public function pendientesProfesional(Request $request)
     {
@@ -310,6 +388,13 @@ class ReservaController extends Controller
     // PUT /reservas/{id}/reprogramar
     public function reprogramar(Request $request, int $id)
     {
+        $reserva = Reserva::findOrFail($id);
+
+        $cliente = User::findOrFail($reserva->cliente_id);
+        $servicio = Servicio::findOrFail($reserva->servicio_id);
+        $profesional = User::findOrFail($servicio->profesional_id);
+
+
         $request->validate([
             'fecha' => 'required|date',
             'hora'  => 'required'
@@ -324,6 +409,18 @@ class ReservaController extends Controller
         if (!$result['success']) {
             return response()->json($result, 409);
         }
+
+        $cliente->notify(new ReservaNotification(
+            'Reserva Reprogramada',
+            "Has reprogramada una reserva para para el servicio: {$servicio->nombre} con el profesional: {$profesional->name} ",
+            $reserva->fecha, $reserva->hora
+        ));
+
+        $profesional->notify(new ReservaNotification(
+            'Reserva Reprogramada',
+            "La reserva para el servicio: {$servicio->nombre} con el cliente: {$cliente->name} fue reprogramada",
+            $reserva->fecha, $reserva->hora
+        ));
 
         return response()->json($result, 200);
     }

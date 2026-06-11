@@ -27,7 +27,10 @@ class Profesional extends Model
         {
             return $this->hasOne(Profesional::class, 'user_id');
         }
-
+    public function user()
+    {
+        return $this->belongsTo(User::class, 'user_id');
+    }
     //Un profesional tiene muchos servicios.
     public function servicios()
     {
