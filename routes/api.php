@@ -16,6 +16,7 @@ use App\Http\Controllers\Api\VideoCallController;
 use App\Http\Controllers\Api\NotificationController;
 use App\Http\Controllers\Api\ExcepcionController;
 use App\Http\Controllers\Api\CalificacionController;
+use App\Http\Controllers\Api\AdminController;
 
 /*
 |--------------------------------------------------------------------------
@@ -68,7 +69,11 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::put('/profesional/profile', [ProfesionalController::class, 'updateProfile']);
     Route::put('/client/profile', [ClienteController::class, 'updateProfile']);
 
-
+    Route::get('/admin/dashboard', [AdminController::class, 'dashboard']);
+    Route::get('/admin/clients', [AdminController::class, 'clients']);
+    Route::get('/admin/professionals', [AdminController::class, 'professionals']);
+    Route::get('/admin/pagos', [AdminController::class, 'getPagos']);
+    Route::get('/admin/pagosTotales', [AdminController::class, 'pagosTotales']);
     /*
     |------------------------------------------
     | Servicios (Profesionales)
@@ -144,4 +149,5 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/notificaciones/{id}/leer', [NotificationController::class, 'leer']);
     Route::post('/notificaciones/leer-todas', [NotificationController::class, 'leerTodas']);
 });
+
 });
