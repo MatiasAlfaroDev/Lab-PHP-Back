@@ -119,6 +119,7 @@ class PagoService
             $pago->update([
                 'estado' => 'aprobado',
                 'paypal_capture_id' => $captureId,
+                'fecha' => now()->toDateString(),
             ]);
 
             Reserva::where(
@@ -174,6 +175,7 @@ class PagoService
             $pago->update([
                 'estado' => 'aprobado',
                 'paypal_capture_id' => $captureId,
+                'fecha' => now()->toDateString(),
             ]);
 
             Reserva::where(
@@ -335,6 +337,7 @@ class PagoService
         $pago->update([
             'estado' => 'aprobado',
             'paypal_capture_id' => $captureId,
+            'fecha' => now()->toDateString(),
         ]);
 
         return response()->json([
@@ -370,7 +373,8 @@ class PagoService
         }
 
         $reserva->pago()->update([
-            'estado' => 'aprobado'
+            'estado' => 'aprobado',
+            'fecha' => now()->toDateString(),
         ]);
 
         return [
