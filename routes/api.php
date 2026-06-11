@@ -74,6 +74,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/admin/professionals', [AdminController::class, 'professionals']);
     Route::get('/admin/pagos', [AdminController::class, 'getPagos']);
     Route::get('/admin/pagosTotales', [AdminController::class, 'pagosTotales']);
+    Route::get('/profesional/pagos', [PagoController::class, 'pagosProfesional']);
+    Route::get('/profesional/pagos/resumen', [PagoController::class, 'resumenProfesional']);
     /*
     |------------------------------------------
     | Servicios (Profesionales)

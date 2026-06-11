@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\Servicio;
 use App\Models\Profesional;
+use App\Models\Calificacion;
 use App\Services\GeocodingService;
 
 class ServicioService
@@ -41,7 +42,20 @@ class ServicioService
     {
         return [
             'success' => true,
-            'data' => Servicio::with('profesional')->get()
+            'data' => Servicio::with('profesional')
+                ->get()
+                ->map(function ($servicio) {
+                    $stats = Calificacion::whereHas('reserva', function ($q) use ($servicio) {
+                        $q->where('servicio_id', $servicio->servicio_id);
+                    })
+                    ->selectRaw('AVG(puntuacion) as promedio, COUNT(*) as cantidad')
+                    ->first();
+
+                    $servicio->promedio = round($stats->promedio ?? 0, 1);
+                    $servicio->cantidad_calificaciones = $stats->cantidad ?? 0;
+
+                    return $servicio;
+                })
         ];
     }
 
