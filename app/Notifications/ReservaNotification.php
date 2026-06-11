@@ -5,6 +5,8 @@ namespace App\Notifications;
 use Illuminate\Bus\Queueable;
 use Illuminate\Notifications\Notification;
 use Illuminate\Notifications\Messages\BroadcastMessage;
+use Illuminate\Notifications\Messages\MailMessage;
+
 
 class ReservaNotification extends Notification
 {
@@ -21,7 +23,7 @@ class ReservaNotification extends Notification
     {
             \Log::info('VIA EJECUTADO');
 
-        return ['database', 'broadcast'];
+        return ['database', 'broadcast', 'mail'];
     }
 
     public function toDatabase($notifiable)
@@ -47,4 +49,20 @@ class ReservaNotification extends Notification
             'hora' => $this->hora,
         ]);
     }
+
+    public function toMail($notifiable)
+{
+
+    \Log::info('TO MAIL EJECUTADO');
+
+    return (new MailMessage)
+        ->subject('Nueva notificación')
+        ->greeting('Hola!')
+        ->line($this->message)
+        ->line('Fecha: ' . $this->fecha)
+        ->line('Hora: ' . $this->hora)
+        ->line('Gracias por usar nuestra aplicación.');
+}
+
+
 }
