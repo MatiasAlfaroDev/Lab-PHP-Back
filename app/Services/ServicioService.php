@@ -81,13 +81,22 @@ class ServicioService
 
         $modalidad = strtolower($data['modalidad']);
         $ubicacion = $this->resolverUbicacion($data, $modalidad);
+        $tipo = trim($data['tipo']);
+        $tipoExistente = Servicio::whereRaw(
+            'LOWER(tipo) = ?',
+            [mb_strtolower($tipo)]
+        )->first();
+
+        if ($tipoExistente) {
+            $tipo = $tipoExistente->tipo;
+        }
 
         $servicio = Servicio::create([
             'profesional_id' => $profesional->user_id,
             'nombre'         => $data['nombre'],
             'descripcion'    => $data['descripcion'],
             'modalidad'      => $modalidad,
-            'tipo'           => $data['tipo'],
+            'tipo'           => $tipo,
             'precio'         => $data['precio'],
             'duracion'       => $data['duracion'],
             'pausa'          => $data['pausa'],
