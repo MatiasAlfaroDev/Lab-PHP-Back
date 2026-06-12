@@ -102,99 +102,139 @@ class DisponibilidadService
     }
 
     // Calcula los slots disponibles para un servicio en una fecha concreta
-    public function getSlotsDisponibles(int $servicioId, string $fecha): array
-    {
-        $servicio = Servicio::find($servicioId);
-        if (!$servicio) {
-            return ['success' => false, 'message' => 'Servicio no encontrado'];
-        }
+  public function getSlotsDisponibles(int $servicioId, string $fecha): array
+{
+    $servicio = Servicio::find($servicioId);
 
-        $carbon    = Carbon::parse($fecha);
-        $diaSemana = $this->dayMap[$carbon->dayOfWeek];
+    if (!$servicio) {
+        return [
+            'success' => false,
+            'message' => 'Servicio no encontrado'
+        ];
+    }
 
-        $bloques = Disponibilidad::where('servicio_id', $servicioId)
-            ->where('dia_semana', $diaSemana)
-            ->get();
+    $carbon = Carbon::parse($fecha);
+    $diaSemana = $this->dayMap[$carbon->dayOfWeek];
 
-        if ($bloques->isEmpty()) {
-            return ['success' => true, 'data' => []];
-        }
-        $excepciones = Excepcion::where('profesional_id', $servicio->profesional_id)
-            ->where('fecha', $fecha)
-            ->get();
-        // Reservas existentes (no canceladas) para este servicio en esta fecha
-        $reservadas = Reserva::where('servicio_id', $servicioId)
-            ->where('fecha', $fecha)
-            ->whereNotIn('estado', ['cancelada'])
-            ->pluck('hora')
-            ->map(fn($h) => substr($h, 0, 5))
-            ->toArray();
+    $bloques = Disponibilidad::where('servicio_id', $servicioId)
+        ->where('dia_semana', $diaSemana)
+        ->get();
 
-        $duracion = (int)$servicio->duracion;
-        $pausa    = (int)$servicio->pausa;
-        $slots    = [];
+    if ($bloques->isEmpty()) {
+        return [
+            'success' => true,
+            'data' => []
+        ];
+    }
 
-        foreach ($bloques as $bloque) {
-            $cursor = Carbon::parse($fecha . ' ' . $bloque->hora_inicio);
-            $fin    = Carbon::parse($fecha . ' ' . $bloque->hora_fin);
+    $excepciones = Excepcion::where(
+        'profesional_id',
+        $servicio->profesional_id
+    )
+    ->where('fecha', $fecha)
+    ->get();
 
-            while (true) {
-                $slotFin = $cursor->copy()->addMinutes($duracion);
-                if ($slotFin->gt($fin)) break;
+    $reservadas = Reserva::where('servicio_id', $servicioId)
+        ->where('fecha', $fecha)
+        ->whereNotIn('estado', ['cancelada'])
+        ->pluck('hora')
+        ->map(fn($h) => substr($h, 0, 5))
+        ->toArray();
 
-                $slotStr = $cursor->format('H:i');
+    $duracion = (int) $servicio->duracion;
+    $pausa = (int) $servicio->pausa;
+    $minAviso = (int) ($servicio->min_aviso ?? 0);
 
-                $bloqueado = false;
+    $slots = [];
 
-                foreach ($excepciones as $excepcion) {
+    foreach ($bloques as $bloque) {
 
-                    // Día completo bloqueado
+        $cursor = Carbon::parse(
+            $fecha . ' ' . $bloque->hora_inicio
+        );
+
+        $fin = Carbon::parse(
+            $fecha . ' ' . $bloque->hora_fin
+        );
+
+        while (true) {
+
+            $slotFin = $cursor->copy()->addMinutes($duracion);
+
+            if ($slotFin->gt($fin)) {
+                break;
+            }
+
+            $slotStr = $cursor->format('H:i');
+
+            $bloqueado = false;
+
+            foreach ($excepciones as $excepcion) {
+
+                // Día completo bloqueado
+                if (
+                    is_null($excepcion->hora_inicio) &&
+                    is_null($excepcion->hora_fin)
+                ) {
+                    $bloqueado = true;
+                    break;
+                }
+
+                // Horario bloqueado
+                if (
+                    !is_null($excepcion->hora_inicio) &&
+                    !is_null($excepcion->hora_fin)
+                ) {
+                    $inicioExcepcion = Carbon::parse(
+                        $fecha . ' ' . $excepcion->hora_inicio
+                    );
+
+                    $finExcepcion = Carbon::parse(
+                        $fecha . ' ' . $excepcion->hora_fin
+                    );
+
                     if (
-                        is_null($excepcion->hora_inicio) &&
-                        is_null($excepcion->hora_fin)
+                        $cursor->lt($finExcepcion) &&
+                        $slotFin->gt($inicioExcepcion)
                     ) {
                         $bloqueado = true;
                         break;
                     }
-
-                    // Horario bloqueado
-                    if (
-                        !is_null($excepcion->hora_inicio) &&
-                        !is_null($excepcion->hora_fin)
-                    ) {
-                        $inicioExcepcion = Carbon::parse(
-                            $fecha . ' ' . $excepcion->hora_inicio
-                        );
-
-                        $finExcepcion = Carbon::parse(
-                            $fecha . ' ' . $excepcion->hora_fin
-                        );
-
-                        if (
-                            $cursor->lt($finExcepcion) &&
-                            $slotFin->gt($inicioExcepcion)
-                        ) {
-                            $bloqueado = true;
-                            break;
-                        }
-                    }
                 }
-
-                if (
-                    !in_array($slotStr, $reservadas) &&
-                    !$bloqueado
-                ) {
-                    $slots[] = [
-                        'hora' => $slotStr,
-                        'modalidad' => $bloque->modalidad
-                    ];
-                }
-
-                $cursor->addMinutes($duracion + $pausa);
             }
-        }
 
-        sort($slots);
-        return ['success' => true, 'data' => $slots];
+            // Validar mínimo aviso (en horas)
+            $cumpleAviso = true;
+
+            if ($carbon->isToday()) {
+
+                $horaMinima = now()->addHours($minAviso);
+
+                if ($cursor->lt($horaMinima)) {
+                    $cumpleAviso = false;
+                }
+            }
+
+            if (
+                !in_array($slotStr, $reservadas) &&
+                !$bloqueado &&
+                $cumpleAviso
+            ) {
+                $slots[] = [
+                    'hora' => $slotStr,
+                    'modalidad' => $bloque->modalidad
+                ];
+            }
+
+            $cursor->addMinutes($duracion + $pausa);
+        }
     }
+
+    usort($slots, fn($a, $b) => strcmp($a['hora'], $b['hora']));
+
+    return [
+        'success' => true,
+        'data' => $slots
+    ];
+}
 }
