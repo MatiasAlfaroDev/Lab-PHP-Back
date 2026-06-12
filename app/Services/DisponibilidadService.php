@@ -40,8 +40,10 @@ class DisponibilidadService
     }
 
     // Reemplaza todas las disponibilidades de un servicio (bulk save)
-    public function bulkUpdate(int $servicioId, array $nuevas, $user): array
+    public function bulkUpdate(int $servicioId, array $data, $user): array
     {
+        $nuevas = $data['disponibilidades'];
+
         $servicio = Servicio::find($servicioId);
         if (!$servicio) {
             return ['success' => false, 'message' => 'Servicio no encontrado'];
@@ -50,6 +52,14 @@ class DisponibilidadService
         if ((int)$servicio->profesional_id !== (int)$user->id) {
             return ['success' => false, 'message' => 'No tenés permiso para modificar este servicio'];
         }
+
+        $servicio->update([
+            'min_aviso' => $data['min_aviso'] ?? $servicio->min_aviso,
+            'min_cancelacion' => $data['min_cancelacion'] ?? $servicio->min_cancelacion,
+            'max_anticipacion_dias' => $data['max_anticipacion_dias'] ?? $servicio->max_anticipacion_dias,
+        ]);
+
+
         $otrosServicios = Servicio::where(
             'profesional_id',
             $servicio->profesional_id

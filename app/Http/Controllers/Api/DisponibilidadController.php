@@ -41,17 +41,21 @@ class DisponibilidadController extends Controller
     public function bulkUpdate(Request $request, $servicioId)
     {
         $request->validate([
-            'disponibilidades'               => 'present|array',
-            'disponibilidades.*.dia_semana'  => 'required|in:lunes,martes,miercoles,jueves,viernes,sabado,domingo',
-            'disponibilidades.*.hora_inicio' => 'required|date_format:H:i',
-            'disponibilidades.*.hora_fin'    => 'required|date_format:H:i',
-        ]);
+        'disponibilidades'               => 'present|array',
+        'disponibilidades.*.dia_semana'  => 'required|in:lunes,martes,miercoles,jueves,viernes,sabado,domingo',
+        'disponibilidades.*.hora_inicio' => 'required|date_format:H:i',
+        'disponibilidades.*.hora_fin'    => 'required|date_format:H:i',
+
+        'min_aviso'              => 'nullable|integer|min:0',
+        'min_cancelacion'        => 'nullable|integer|min:0',
+        'max_anticipacion_dias'  => 'nullable|integer|min:1',
+    ]);
 
         $result = $this->service->bulkUpdate(
-            (int)$servicioId,
-            $request->disponibilidades,
-            $request->user()
-        );
+        (int)$servicioId,
+        $request->all(),
+        $request->user()
+    );
 
         return response()->json($result, $result['success'] ? 200 : 403);
     }
