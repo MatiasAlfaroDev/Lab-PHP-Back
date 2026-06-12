@@ -62,7 +62,14 @@ class ClienteService
             }
         }
 
-        return array_values($clientes);
+       return [
+    'proximos' => array_values(
+        array_filter($clientes, fn($c) => $c['tiene_turnos'])
+    ),
+    'historicos' => array_values(
+        array_filter($clientes, fn($c) => !$c['tiene_turnos'])
+    ),
+];
     }
 
     public function updateProfile($user, array $data)
