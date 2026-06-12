@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api;
 
+use Illuminate\Support\Facades\Log;
 use App\Http\Controllers\Controller;
 use App\Models\Reserva;
 use App\Models\Servicio;
@@ -167,6 +168,12 @@ public function cancel(Request $request, $id)
 {
     $reserva = Reserva::with('servicio')->findOrFail($id);
 
+    Log::info('INICIO CANCELAR', [
+    'reserva_id' => $id,
+    'estado' => $reserva->estado
+]);
+
+
     $user = $request->user();
     $isCliente = (int) $reserva->cliente_id === (int) $user->id;
 
@@ -174,6 +181,7 @@ public function cancel(Request $request, $id)
         ? (int) $reserva->profesional_id === (int) $user->id
         : false;
 
+Log::info('ANTES DE NOTIFICACIONES');
     if (in_array($reserva->estado, ['cancelada', 'finalizada', 'no_asistida'])) {
         return response()->json([
             'success' => false,
@@ -211,7 +219,7 @@ public function cancel(Request $request, $id)
     $profesional = User::findOrFail($servicio->profesional_id);
 
     if ($isCliente) {
-        $profesional->notify(new ReservaNotification(
+        /*$profesional->notify(new ReservaNotification(
             'Reserva Cancelada',
             "{$cliente->name} canceló una reserva para el servicio: {$servicio->nombre}",
             $reserva->fecha,
@@ -222,29 +230,32 @@ public function cancel(Request $request, $id)
             "Has cancelado tu reserva  para el servicio: {$servicio->nombre} con el profesional: {$profesional->name}",
             $reserva->fecha,
             $reserva->hora
-        ));
+        ));*/
 
     } elseif ($isProfesional) {
 
-        $cliente->notify(new ReservaNotification(
-            'Reserva Cancelada',
-            "Tu reserva para el servicio: {$servicio->nombre} fue cancelada por el profesional: {$profesional->name}",
-            $reserva->fecha,
-            $reserva->hora
-        ));
-        $profesional->notify(new ReservaNotification(
+        //$cliente->notify(new ReservaNotification(
+           // 'Reserva Cancelada',
+            //"Tu reserva para el servicio: {$servicio->nombre} fue cancelada por el profesional: {$profesional->name}",
+           // $reserva->fecha,
+           // $reserva->hora
+        //));
+       /* $profesional->notify(new ReservaNotification(
             'Reserva Cancelada',
             "Has cancelado una reserva para el servicio: {$servicio->nombre} con el cliente: {$cliente->name} ",
             $reserva->fecha,
             $reserva->hora
-        ));
+        ));*/
 
     } 
 
+    Log::info('ANTES DE UPDATE');
+
     $reserva->update([
         'estado' => 'cancelada'
-    ]);
-
+        ]);
+        
+    Log::info('DESPUES DE UPDATE');
     return response()->json([
         'success' => true,
         'message' => 'Reserva cancelada'
