@@ -6,6 +6,7 @@ use App\Models\User;
 use App\Models\Reserva;
 use App\Models\Pago;
 use Illuminate\Support\Facades\DB;
+use App\Notifications\UserBlockedNotification;
 
 class AdminService
 {
@@ -127,12 +128,13 @@ class AdminService
             ->map(function ($u) use ($sessions) {
 
                 return [
-                    'id' => $u->user_id,
+                    'id' => $u->id,
                     'name' => $u->name,
                     'email' => $u->email,
                     'role' => $u->role,
                     'sessions' => $sessions[$u->user_id] ?? 0,
                     'joined' => $u->created_at?->toDateString(),
+                    'activo' => $u ->activo
                 ];
             })
             ->toArray();
@@ -151,11 +153,12 @@ class AdminService
             ->map(function ($u) use ($sessions) {
 
                 return [
-                    'id' => $u->user_id,
+                    'id' => $u->id,
                     'name' => $u->name,
                     'email' => $u->email,
                     'sessions' => $sessions[$u->user_id] ?? 0,
                     'joined' => $u->created_at?->toDateString(),
+                    'activo' => $u ->activo
                 ];
             })
             ->toArray();
@@ -219,6 +222,44 @@ class AdminService
             'total' => (float) $total,
             'pagado' => (float) $pagado,
             'pendiente' => (float) $pendiente,
+        ];
+    }
+
+
+    public function cambiarEstadoUsuario(int $userId): array
+    {
+        $user = User::find($userId);
+
+        if (!$user) {
+            return [
+                'success' => false,
+                'message' => 'Usuario no encontrado'
+            ];
+        }
+
+        DB::table('users')
+            ->where('id', $userId)
+            ->update([
+                'activo' => DB::raw('NOT activo')
+            ]);
+
+        $nuevoEstado = DB::table('users')
+            ->where('id', $userId)
+            ->value('activo');
+
+        // NOTIFICACIÓN SI SE BLOQUEO/ACTIVO
+        $user->notify(
+            new UserBlockedNotification(
+                $nuevoEstado
+                    ? 'Tu cuenta fue reactivada. Ya podés volver a ingresar.'
+                    : 'Tu cuenta fue bloqueada por un administrador.'
+            )
+        );
+
+        return [
+            'success' => true,
+            'message' => $nuevoEstado ? 'Usuario activado' : 'Usuario bloqueado',
+            'activo' => $nuevoEstado
         ];
     }
 }
