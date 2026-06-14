@@ -194,7 +194,8 @@ class ReservaService
 
             $reserva->update([
                 'fecha' => $fecha,
-                'hora' => $hora 
+                'hora' => $hora,
+                'recordatorio_enviado_at' => null
             ]);
 
             return [

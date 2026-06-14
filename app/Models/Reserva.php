@@ -20,7 +20,8 @@ class Reserva extends Model
         'hora',
         'estado',
         'modalidad',
-        'estado_videollamada'
+        'estado_videollamada',
+        'recordatorio_enviado_at'
     ];
 
     // Cliente dueño de la reserva
