@@ -5,33 +5,35 @@ use App\Models\Excepcion;
 class ExcepcionService
 {
     public function listar($user): array
-    {
-        $excepciones = Excepcion::where(
-            'profesional_id',
-            $user->id
-        )->get();
+{
+    $excepciones = Excepcion::where(
+        'profesional_id',
+        $user->id
+    )
+    ->orderBy('fecha_desde')
+    ->get();
 
-        return [
-            'success' => true,
-            'data' => $excepciones
-        ];
-    }
+    return [
+        'success' => true,
+        'data' => $excepciones
+    ];
+}
+   public function crear(array $data, $user): array
+{
+    Excepcion::create([
+        'profesional_id' => $user->id,
+        'fecha_desde' => $data['fecha_desde'],
+        'fecha_hasta' => $data['fecha_hasta'] ?? $data['fecha_desde'],
+        'hora_inicio' => $data['hora_inicio'] ?? null,
+        'hora_fin' => $data['hora_fin'] ?? null,
+        'motivo' => $data['motivo'] ?? null,
+    ]);
 
-    public function crear(array $data, $user): array
-    {
-        Excepcion::create([
-            'profesional_id' => $user->id,
-            'fecha' => $data['fecha'],
-            'hora_inicio' => $data['hora_inicio'] ?? null,
-            'hora_fin' => $data['hora_fin'] ?? null,
-            'motivo' => $data['motivo'] ?? null,
-        ]);
-
-        return [
-            'success' => true,
-            'message' => 'Excepción creada'
-        ];
-    }
+    return [
+        'success' => true,
+        'message' => 'Excepción creada'
+    ];
+}
 
     public function eliminar(int $excepcionId, $user): array
     {
