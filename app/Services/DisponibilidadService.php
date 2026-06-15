@@ -105,6 +105,8 @@ class DisponibilidadService
 {
     $servicio = Servicio::find($servicioId);
 
+    
+
     if (!$servicio) {
         return [
             'success' => false,
@@ -127,6 +129,8 @@ class DisponibilidadService
         ->where('fecha_desde', '<=', $fecha)
         ->where('fecha_hasta', '>=', $fecha)
         ->get();
+
+    
 
     $reservadas = Reserva::where('servicio_id', $servicioId)
         ->where('fecha', $fecha)

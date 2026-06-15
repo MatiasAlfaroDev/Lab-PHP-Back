@@ -1,8 +1,6 @@
 <?php
 
 namespace App\Http\Controllers\Api;
-
-use Illuminate\Support\Facades\Log;
 use App\Http\Controllers\Controller;
 use App\Models\Reserva;
 use App\Models\Servicio;
@@ -168,12 +166,6 @@ public function cancel(Request $request, $id)
 {
     $reserva = Reserva::with('servicio')->findOrFail($id);
 
-    Log::info('INICIO CANCELAR', [
-    'reserva_id' => $id,
-    'estado' => $reserva->estado
-]);
-
-
     $user = $request->user();
     $isCliente = (int) $reserva->cliente_id === (int) $user->id;
 
@@ -181,7 +173,6 @@ public function cancel(Request $request, $id)
         ? (int) $reserva->profesional_id === (int) $user->id
         : false;
 
-Log::info('ANTES DE NOTIFICACIONES');
     if (in_array($reserva->estado, ['cancelada', 'finalizada', 'no_asistida'])) {
         return response()->json([
             'success' => false,
@@ -249,13 +240,11 @@ Log::info('ANTES DE NOTIFICACIONES');
 
     } 
 
-    Log::info('ANTES DE UPDATE');
 
     $reserva->update([
         'estado' => 'cancelada'
         ]);
         
-    Log::info('DESPUES DE UPDATE');
     return response()->json([
         'success' => true,
         'message' => 'Reserva cancelada'
