@@ -22,9 +22,9 @@ class UserBlockedNotification extends Notification
     public function toMail($notifiable)
     {
         $mail = (new MailMessage)
-            ->subject('Cuenta bloqueada')
+            ->subject('Estado de cuenta')
             ->greeting('Hola ' . $notifiable->name)
-            ->line('Tu cuenta fue bloqueada por un administrador.');
+            ->line($this->message);
 
         if (count($this->reservas) > 0) {
 
