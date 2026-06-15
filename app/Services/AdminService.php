@@ -5,6 +5,10 @@ namespace App\Services;
 use App\Models\User;
 use App\Models\Reserva;
 use App\Models\Pago;
+use App\Models\Servicio;
+use App\Models\CompraItemPaquete;
+use Carbon\Carbon;
+use App\Notifications\ReservaNotification;
 use Illuminate\Support\Facades\DB;
 use App\Notifications\UserBlockedNotification;
 
@@ -132,7 +136,7 @@ class AdminService
                     'name' => $u->name,
                     'email' => $u->email,
                     'role' => $u->role,
-                    'sessions' => $sessions[$u->user_id] ?? 0,
+                    'sessions' => $sessions[$u->id] ?? 0,
                     'joined' => $u->created_at?->toDateString(),
                     'activo' => $u ->activo
                 ];
@@ -156,7 +160,7 @@ class AdminService
                     'id' => $u->id,
                     'name' => $u->name,
                     'email' => $u->email,
-                    'sessions' => $sessions[$u->user_id] ?? 0,
+                    'sessions' => $sessions[$u->id] ?? 0,
                     'joined' => $u->created_at?->toDateString(),
                     'activo' => $u ->activo
                 ];
@@ -227,39 +231,119 @@ class AdminService
 
 
     public function cambiarEstadoUsuario(int $userId): array
-    {
-        $user = User::find($userId);
+{
+    $user = User::find($userId);
 
-        if (!$user) {
-            return [
-                'success' => false,
-                'message' => 'Usuario no encontrado'
-            ];
-        }
-
-        DB::table('users')
-            ->where('id', $userId)
-            ->update([
-                'activo' => DB::raw('NOT activo')
-            ]);
-
-        $nuevoEstado = DB::table('users')
-            ->where('id', $userId)
-            ->value('activo');
-
-        // NOTIFICACIÓN SI SE BLOQUEO/ACTIVO
-        $user->notify(
-            new UserBlockedNotification(
-                $nuevoEstado
-                    ? 'Tu cuenta fue reactivada. Ya podés volver a ingresar.'
-                    : 'Tu cuenta fue bloqueada por un administrador.'
-            )
-        );
-
+    if (!$user) {
         return [
-            'success' => true,
-            'message' => $nuevoEstado ? 'Usuario activado' : 'Usuario bloqueado',
-            'activo' => $nuevoEstado
+            'success' => false,
+            'message' => 'Usuario no encontrado'
         ];
     }
+
+    DB::table('users')
+        ->where('id', $userId)
+        ->update([
+            'activo' => DB::raw('NOT activo')
+        ]);
+
+    $nuevoEstado = DB::table('users')
+        ->where('id', $userId)
+        ->value('activo');
+
+    if (!$nuevoEstado) {
+
+        $reservas = Reserva::with('servicio')
+            ->where('cliente_id', $userId)
+            ->whereIn('estado', [
+                'pendiente',
+                'confirmada',
+                'pagada'
+            ])
+            ->get()
+            ->filter(function ($reserva) {
+                return \Carbon\Carbon::parse(
+                    $reserva->fecha . ' ' . substr($reserva->hora, 0, 5)
+                )->greaterThan(now());
+            });
+
+        $detalleReservas = [];
+
+        foreach ($reservas as $reserva) {
+
+            // Devolver sesión al paquete si corresponde
+            if ($reserva->compra_item_paquete_id) {
+
+                $item = CompraItemPaquete::find(
+                    $reserva->compra_item_paquete_id
+                );
+
+                if ($item) {
+                    $item->increment('sesiones_restantes');
+                }
+            }
+
+             $servicio = $reserva->servicio;
+
+            // Cancelar reserva
+            $reserva->update([
+                'estado' => 'cancelada'
+            ]);
+
+            if ($servicio) {
+
+                $detalleReservas[] =
+                    "• {$servicio->nombre} - {$reserva->fecha} {$reserva->hora}";
+
+                // Notificar al profesional
+                if ($servicio->profesional_id) {
+
+                    $profesional = User::find($servicio->profesional_id);
+
+                    if ($profesional) {
+
+                        $profesional->notify(
+                            new ReservaNotification(
+                                'Reserva Cancelada',
+                                "La reserva de {$user->name} para el servicio {$servicio->nombre} fue cancelada porque la cuenta del cliente fue bloqueada por un administrador.",
+                                $reserva->fecha,
+                                $reserva->hora
+                            )
+                        );
+                    }
+                }
+            }
+        }
+
+        $mensaje = 'Tu cuenta fue bloqueada por un administrador.';
+
+        if (count($detalleReservas) > 0) {
+
+            $mensaje .= "\n\nAdemás, se cancelaron las siguientes reservas futuras:\n\n";
+            $mensaje .= implode("\n", $detalleReservas);
+
+        } else {
+
+            $mensaje .= "\n\nNo tenías reservas futuras pendientes.";
+        }
+
+        $user->notify(
+            new UserBlockedNotification($mensaje)
+        );
+
+    } else {
+
+        $user->notify(
+            new UserBlockedNotification(
+                'Tu cuenta fue reactivada. Ya podés volver a ingresar.'
+            )
+        );
+    }
+
+    return [
+        'success' => true,
+        'message' => $nuevoEstado ? 'Usuario activado' : 'Usuario bloqueado',
+        'activo' => $nuevoEstado
+    ];
+}
 }
