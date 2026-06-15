@@ -10,8 +10,10 @@ class UserBlockedNotification extends Notification
 {
     use Queueable;
 
-    public function __construct(public string $message) {}
-
+    public function __construct(
+        public string $message,
+        public array $reservas = []
+    ) {}
     public function via($notifiable)
     {
         return ['mail'];
@@ -19,9 +21,20 @@ class UserBlockedNotification extends Notification
 
     public function toMail($notifiable)
     {
-        return (new MailMessage)
+        $mail = (new MailMessage)
             ->subject('Cuenta bloqueada')
             ->greeting('Hola ' . $notifiable->name)
-            ->line($this->message);
+            ->line('Tu cuenta fue bloqueada por un administrador.');
+
+        if (count($this->reservas) > 0) {
+
+            $mail->line('Se cancelaron las siguientes reservas futuras:');
+
+            foreach ($this->reservas as $reserva) {
+                $mail->line($reserva);
+            }
+        }
+
+        return $mail;
     }
 }

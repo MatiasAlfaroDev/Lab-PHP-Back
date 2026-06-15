@@ -315,20 +315,11 @@ class AdminService
             }
         }
 
-        $mensaje = 'Tu cuenta fue bloqueada por un administrador.';
-
-        if (count($detalleReservas) > 0) {
-
-            $mensaje .= "\n\nAdemás, se cancelaron las siguientes reservas futuras:\n\n";
-            $mensaje .= implode("\n", $detalleReservas);
-
-        } else {
-
-            $mensaje .= "\n\nNo tenías reservas futuras pendientes.";
-        }
-
         $user->notify(
-            new UserBlockedNotification($mensaje)
+            new UserBlockedNotification(
+                'Tu cuenta fue bloqueada por un administrador.',
+                $detalleReservas
+            )
         );
 
     } else {
