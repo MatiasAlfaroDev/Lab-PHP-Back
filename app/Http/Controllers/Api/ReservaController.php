@@ -302,19 +302,20 @@ public function cancel(Request $request, $id)
                 $reserva->hora
             ));
 
-        } else {
+        }
+    }
+    if ($estado === 'cancelada') {
+
+        if ($reserva->compra_item_paquete_id) {
+
             $item = CompraItemPaquete::find(
                 $reserva->compra_item_paquete_id
             );
 
-            if ($item && $item->sesiones_restantes > 0) {
-    
-                $item->decrement('sesiones_restantes');
-
+            if ($item) {
+                $item->increment('sesiones_restantes');
             }
         }
-    }
-    if ($estado === 'cancelada') {
         $cliente->notify(new ReservaNotification(
             'Reserva Cancelada',
             "Tu reserva para el servicio: {$servicio->nombre}, con el profesional: {$profesional->name} fue cancelada ",
