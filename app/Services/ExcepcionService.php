@@ -19,6 +19,7 @@ class ExcepcionService
     ];
 }
    public function crear(array $data, $user): array
+   
 {
     Excepcion::create([
         'profesional_id' => $user->id,
