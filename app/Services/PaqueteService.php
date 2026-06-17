@@ -4,6 +4,8 @@ namespace App\Services;
 
 use App\Models\Paquete;
 use App\Models\Servicio;
+use App\Models\Profesional;
+use App\Models\User;
 use App\Models\ItemPaquete;
 use Illuminate\Support\Facades\DB;
 
@@ -29,6 +31,12 @@ class PaqueteService
                 if (!$servicio) {
                     throw new \Exception(
                         'Servicio con ID ' . $item['servicio_id'] . ' no encontrado'
+                    );
+                }
+
+                if ($servicio->eliminado) {
+                    throw new \Exception(
+                        'El servicio ' . $servicio->nombre . ' fue eliminado'
                     );
                 }
 
@@ -66,7 +74,11 @@ class PaqueteService
 
     public function listarPaquetes()
     {
-        return Paquete::with('servicios')->get();
+        return Paquete::with('servicios')
+            ->whereHas('servicios.profesional.user', function ($query) {
+                $query->whereRaw('activo = true');
+            })
+            ->get();
     }
 
     public function listarMisPaquetes($user)
