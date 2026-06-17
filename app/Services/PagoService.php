@@ -7,6 +7,7 @@ use App\Models\Reserva;
 use App\Models\CompraPaquete;
 use Illuminate\Support\Facades\DB;
 use Srmklive\PayPal\Services\PayPal as PayPalClient;
+use Carbon\Carbon;
 
 class PagoService
 {
@@ -118,6 +119,7 @@ class PagoService
             $pago->update([
                 'estado' => 'aprobado',
                 'paypal_capture_id' => $captureId,
+                'fecha' => now()->toDateString(),
             ]);
 
             Reserva::where(
@@ -173,6 +175,7 @@ class PagoService
             $pago->update([
                 'estado' => 'aprobado',
                 'paypal_capture_id' => $captureId,
+                'fecha' => now()->toDateString(),
             ]);
 
             Reserva::where(
@@ -334,6 +337,7 @@ class PagoService
         $pago->update([
             'estado' => 'aprobado',
             'paypal_capture_id' => $captureId,
+            'fecha' => now()->toDateString(),
         ]);
 
         return response()->json([
@@ -369,13 +373,56 @@ class PagoService
         }
 
         $reserva->pago()->update([
-            'estado' => 'aprobado'
+            'estado' => 'aprobado',
+            'fecha' => now()->toDateString(),
         ]);
 
         return [
             'success' => true,
             'message' => 'Pago confirmado',
             'status' => 200
+        ];
+    }
+
+    public function obtenerPagosProfesional(int $profesionalId): array
+    {
+        $pagos = Pago::with([
+            'reserva.servicio',
+            'reserva.cliente.user',
+        ])
+        ->whereHas('reserva.servicio', function ($q) use ($profesionalId) {
+            $q->where('profesional_id', $profesionalId);
+        })
+        ->orderBy('fecha', 'desc')
+        ->get();
+
+        return $pagos->map(function ($pago) {
+
+            return [
+                'fecha' => $pago->fecha,
+                'cliente' => $pago->reserva->cliente->user->name ?? '-',
+                'servicio' => $pago->reserva->servicio->nombre ?? '-',
+                'monto' => $pago->monto,
+                'estado' => $pago->estado,
+            ];
+        })->toArray();
+    }
+
+    public function obtenerResumenPagosProfesional(int $profesionalId): array
+    {
+        $inicioMes = Carbon::now()->startOfMonth();
+        $finMes = Carbon::now()->endOfMonth();
+
+        $pagos = Pago::whereHas('reserva.servicio', function ($q) use ($profesionalId) {
+            $q->where('profesional_id', $profesionalId);
+        })
+        ->whereBetween('fecha', [$inicioMes, $finMes])
+        ->get();
+
+        return [
+            'total_mes' => (float) $pagos->sum('monto'),
+            'pagado' => (float) $pagos->where('estado', 'aprobado')->sum('monto'),
+            'pendiente' => (float) $pagos->where('estado', 'pendiente')->sum('monto'),
         ];
     }
 }

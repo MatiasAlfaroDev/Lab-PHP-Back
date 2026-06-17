@@ -83,4 +83,36 @@ class PagoController extends Controller
 
         return response()->json($result, $result['status'] ?? 200);
     }
+
+    public function resumenProfesional(Request $request)
+    {
+        $user = $request->user();
+
+        if ($user->role !== 'professional') {
+            return response()->json(['message' => 'No autorizado'], 403);
+        }
+
+        $data = $this->pagoService->obtenerResumenPagosProfesional($user->id);
+
+        return response()->json([
+            'success' => true,
+            'data' => $data
+        ]);
+    }
+
+    public function pagosProfesional(Request $request)
+    {
+        $user = $request->user();
+
+        if ($user->role !== 'professional') {
+            return response()->json(['message' => 'No autorizado'], 403);
+        }
+
+        $data = $this->pagoService->obtenerPagosProfesional($user->id);
+
+        return response()->json([
+            'success' => true,
+            'data' => $data
+        ]);
+    }
 }

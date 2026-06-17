@@ -10,6 +10,7 @@ class Kernel extends ConsoleKernel
     protected function schedule(Schedule $schedule)
     {
         $schedule->command('reservas:en-curso')->everyMinute();
+        $schedule->command('reservas:recordatorios')->everyMinute();
     }
 
     protected function commands()

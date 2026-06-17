@@ -29,5 +29,6 @@ return Application::configure(basePath: dirname(__DIR__))
     })
     ->withSchedule(function (Schedule $schedule) {
         $schedule->command('reservas:en-curso')->everyMinute();
+        $schedule->command('reservas:recordatorios')->everyMinute();
     })
     ->create();

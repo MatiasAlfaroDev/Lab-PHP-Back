@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\Servicio;
 use App\Models\Profesional;
+use App\Models\Calificacion;
 use App\Services\GeocodingService;
 
 class ServicioService
@@ -41,7 +42,20 @@ class ServicioService
     {
         return [
             'success' => true,
-            'data' => Servicio::with('profesional')->get()
+            'data' => Servicio::with('profesional')
+                ->get()
+                ->map(function ($servicio) {
+                    $stats = Calificacion::whereHas('reserva', function ($q) use ($servicio) {
+                        $q->where('servicio_id', $servicio->servicio_id);
+                    })
+                    ->selectRaw('AVG(puntuacion) as promedio, COUNT(*) as cantidad')
+                    ->first();
+
+                    $servicio->promedio = round($stats->promedio ?? 0, 1);
+                    $servicio->cantidad_calificaciones = $stats->cantidad ?? 0;
+
+                    return $servicio;
+                })
         ];
     }
 
@@ -67,13 +81,22 @@ class ServicioService
 
         $modalidad = strtolower($data['modalidad']);
         $ubicacion = $this->resolverUbicacion($data, $modalidad);
+        $tipo = trim($data['tipo']);
+        $tipoExistente = Servicio::whereRaw(
+            'LOWER(tipo) = ?',
+            [mb_strtolower($tipo)]
+        )->first();
+
+        if ($tipoExistente) {
+            $tipo = $tipoExistente->tipo;
+        }
 
         $servicio = Servicio::create([
             'profesional_id' => $profesional->user_id,
             'nombre'         => $data['nombre'],
             'descripcion'    => $data['descripcion'],
             'modalidad'      => $modalidad,
-            'tipo'           => $data['tipo'],
+            'tipo'           => $tipo,
             'precio'         => $data['precio'],
             'duracion'       => $data['duracion'],
             'pausa'          => $data['pausa'],
@@ -100,11 +123,18 @@ class ServicioService
         }
 
         $modalidad = isset($data['modalidad']) ? strtolower($data['modalidad']) : $servicio->modalidad;
-        $ubicacion = $this->resolverUbicacion($data + [
-            'direccion' => $servicio->direccion,
-            'latitud'   => $servicio->latitud,
-            'longitud'  => $servicio->longitud,
-        ], $modalidad);
+
+        // Si cambia la dirección sin coordenadas explícitas → re-geocodificar
+        // Si la dirección no cambia → conservar coordenadas existentes
+        $direccionCambiada = array_key_exists('direccion', $data) && $data['direccion'] !== $servicio->direccion;
+        $dataUbicacion = $data;
+        if (!$direccionCambiada) {
+            $dataUbicacion['direccion'] ??= $servicio->direccion;
+            $dataUbicacion['latitud']   ??= $servicio->latitud;
+            $dataUbicacion['longitud']  ??= $servicio->longitud;
+        }
+
+        $ubicacion = $this->resolverUbicacion($dataUbicacion, $modalidad);
 
         $servicio->update([
             'nombre'          => $data['nombre']          ?? $servicio->nombre,

@@ -40,8 +40,10 @@ class DisponibilidadService
     }
 
     // Reemplaza todas las disponibilidades de un servicio (bulk save)
-    public function bulkUpdate(int $servicioId, array $nuevas, $user): array
+    public function bulkUpdate(int $servicioId, array $data, $user): array
     {
+        $nuevas = $data['disponibilidades'];
+
         $servicio = Servicio::find($servicioId);
         if (!$servicio) {
             return ['success' => false, 'message' => 'Servicio no encontrado'];
@@ -50,6 +52,14 @@ class DisponibilidadService
         if ((int)$servicio->profesional_id !== (int)$user->id) {
             return ['success' => false, 'message' => 'No tenés permiso para modificar este servicio'];
         }
+
+        $servicio->update([
+            'min_aviso' => $data['min_aviso'] ?? $servicio->min_aviso,
+            'min_cancelacion' => $data['min_cancelacion'] ?? $servicio->min_cancelacion,
+            'max_anticipacion_dias' => $data['max_anticipacion_dias'] ?? $servicio->max_anticipacion_dias,
+        ]);
+
+
         $otrosServicios = Servicio::where(
             'profesional_id',
             $servicio->profesional_id
@@ -91,100 +101,112 @@ class DisponibilidadService
         return ['success' => true, 'message' => 'Disponibilidad actualizada'];
     }
 
-    // Calcula los slots disponibles para un servicio en una fecha concreta
-    public function getSlotsDisponibles(int $servicioId, string $fecha): array
-    {
-        $servicio = Servicio::find($servicioId);
-        if (!$servicio) {
-            return ['success' => false, 'message' => 'Servicio no encontrado'];
-        }
+ public function getSlotsDisponibles(int $servicioId, string $fecha): array
+{
+    $servicio = Servicio::find($servicioId);
 
-        $carbon    = Carbon::parse($fecha);
-        $diaSemana = $this->dayMap[$carbon->dayOfWeek];
+    
 
-        $bloques = Disponibilidad::where('servicio_id', $servicioId)
-            ->where('dia_semana', $diaSemana)
-            ->get();
-
-        if ($bloques->isEmpty()) {
-            return ['success' => true, 'data' => []];
-        }
-        $excepciones = Excepcion::where('profesional_id', $servicio->profesional_id)
-            ->where('fecha', $fecha)
-            ->get();
-        // Reservas existentes (no canceladas) para este servicio en esta fecha
-        $reservadas = Reserva::where('servicio_id', $servicioId)
-            ->where('fecha', $fecha)
-            ->whereNotIn('estado', ['cancelada'])
-            ->pluck('hora')
-            ->map(fn($h) => substr($h, 0, 5))
-            ->toArray();
-
-        $duracion = (int)$servicio->duracion;
-        $pausa    = (int)$servicio->pausa;
-        $slots    = [];
-
-        foreach ($bloques as $bloque) {
-            $cursor = Carbon::parse($fecha . ' ' . $bloque->hora_inicio);
-            $fin    = Carbon::parse($fecha . ' ' . $bloque->hora_fin);
-
-            while (true) {
-                $slotFin = $cursor->copy()->addMinutes($duracion);
-                if ($slotFin->gt($fin)) break;
-
-                $slotStr = $cursor->format('H:i');
-
-                $bloqueado = false;
-
-                foreach ($excepciones as $excepcion) {
-
-                    // Día completo bloqueado
-                    if (
-                        is_null($excepcion->hora_inicio) &&
-                        is_null($excepcion->hora_fin)
-                    ) {
-                        $bloqueado = true;
-                        break;
-                    }
-
-                    // Horario bloqueado
-                    if (
-                        !is_null($excepcion->hora_inicio) &&
-                        !is_null($excepcion->hora_fin)
-                    ) {
-                        $inicioExcepcion = Carbon::parse(
-                            $fecha . ' ' . $excepcion->hora_inicio
-                        );
-
-                        $finExcepcion = Carbon::parse(
-                            $fecha . ' ' . $excepcion->hora_fin
-                        );
-
-                        if (
-                            $cursor->lt($finExcepcion) &&
-                            $slotFin->gt($inicioExcepcion)
-                        ) {
-                            $bloqueado = true;
-                            break;
-                        }
-                    }
-                }
-
-                if (
-                    !in_array($slotStr, $reservadas) &&
-                    !$bloqueado
-                ) {
-                    $slots[] = [
-                        'hora' => $slotStr,
-                        'modalidad' => $bloque->modalidad
-                    ];
-                }
-
-                $cursor->addMinutes($duracion + $pausa);
-            }
-        }
-
-        sort($slots);
-        return ['success' => true, 'data' => $slots];
+    if (!$servicio) {
+        return [
+            'success' => false,
+            'message' => 'Servicio no encontrado'
+        ];
     }
+
+    $carbon = Carbon::parse($fecha);
+    $diaSemana = $this->dayMap[$carbon->dayOfWeek];
+
+    $bloques = Disponibilidad::where('servicio_id', $servicioId)
+        ->where('dia_semana', $diaSemana)
+        ->get();
+
+    if ($bloques->isEmpty()) {
+        return ['success' => true, 'data' => []];
+    }
+
+    $excepciones = Excepcion::where('profesional_id', $servicio->profesional_id)
+        ->where('fecha_desde', '<=', $fecha)
+        ->where('fecha_hasta', '>=', $fecha)
+        ->get();
+
+    
+
+    $reservadas = Reserva::where('servicio_id', $servicioId)
+        ->where('fecha', $fecha)
+        ->whereNotIn('estado', ['cancelada'])
+        ->pluck('hora')
+        ->map(fn($h) => substr($h, 0, 5))
+        ->toArray();
+
+    $duracion = (int) $servicio->duracion;
+    $pausa = (int) $servicio->pausa;
+    $minAviso = (int) ($servicio->min_aviso ?? 0);
+
+    $slots = [];
+
+    // 🔥 1. CHECK GLOBAL: día completamente bloqueado
+    $diaBloqueado = $excepciones->contains(function ($ex) {
+        return is_null($ex->hora_inicio) && is_null($ex->hora_fin);
+    });
+
+    if ($diaBloqueado) {
+        return ['success' => true, 'data' => []];
+    }
+
+    foreach ($bloques as $bloque) {
+
+        $cursor = Carbon::parse("$fecha {$bloque->hora_inicio}");
+        $fin    = Carbon::parse("$fecha {$bloque->hora_fin}");
+
+        while ($cursor->copy()->addMinutes($duracion)->lte($fin)) {
+
+            $slotFin = $cursor->copy()->addMinutes($duracion);
+            $slotStr = $cursor->format('H:i');
+
+            // 🔥 2. CHECK EXCEPCIONES HORARIAS
+            $bloqueado = $excepciones->contains(function ($ex) use ($cursor, $slotFin, $fecha) {
+
+                if (is_null($ex->hora_inicio) || is_null($ex->hora_fin)) {
+                    return true;
+                }
+
+                $inicioEx = Carbon::parse("$fecha {$ex->hora_inicio}");
+                $finEx    = Carbon::parse("$fecha {$ex->hora_fin}");
+
+                return $cursor->lt($finEx) && $slotFin->gt($inicioEx);
+            });
+
+            // 🔥 3. MIN AVISO
+            $cumpleAviso = true;
+
+            if ($carbon->isToday()) {
+                $horaMinima = now()->addHours($minAviso);
+                if ($cursor->lt($horaMinima)) {
+                    $cumpleAviso = false;
+                }
+            }
+
+            if (
+                !in_array($slotStr, $reservadas) &&
+                !$bloqueado &&
+                $cumpleAviso
+            ) {
+                $slots[] = [
+                    'hora' => $slotStr,
+                    'modalidad' => $bloque->modalidad
+                ];
+            }
+
+            $cursor->addMinutes($duracion + $pausa);
+        }
+    }
+
+    usort($slots, fn($a, $b) => strcmp($a['hora'], $b['hora']));
+
+    return [
+        'success' => true,
+        'data' => $slots
+    ];
+}
 }

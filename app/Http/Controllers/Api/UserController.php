@@ -87,8 +87,18 @@ class UserController extends Controller
     {
         $response = $this->userService->handleGoogleLogin($request->input('state'));
 
+        // si viene error (usuario bloqueado)
+        if (!($response['success'] ?? true)) {
+            return redirect(
+                env('FRONTEND_URL', 'http://localhost:5173') .
+                '/auth/google/callback?error=' . urlencode($response['message'])
+            );
+        }
+
+        // login OK
         return redirect(
-            env('FRONTEND_URL', 'http://localhost:5173') . '/auth/google/callback?' .
+            env('FRONTEND_URL', 'http://localhost:5173') .
+            '/auth/google/callback?' .
             http_build_query([
                 'token' => $response['token'],
                 'id' => $response['user']->id,
@@ -96,20 +106,6 @@ class UserController extends Controller
                 'email' => $response['user']->email,
                 'role' => $response['user']->role,
             ])
-        );
-    }
-
-    public function updatePassword(Request $request)
-    {
-        $user = auth()->user();
-
-        $data = $request->validate([
-            'current_password' => 'required',
-            'password' => 'required|confirmed|min:8',
-        ]);
-
-        return response()->json(
-            $this->userService->updatePassword($user, $data)
         );
     }
 }

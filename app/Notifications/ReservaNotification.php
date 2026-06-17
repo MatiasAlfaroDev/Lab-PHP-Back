@@ -21,14 +21,12 @@ class ReservaNotification extends Notification
 
     public function via($notifiable)
     {
-            \Log::info('VIA EJECUTADO');
 
         return ['database', 'broadcast', 'mail'];
     }
 
     public function toDatabase($notifiable)
     {
-            \Log::info('TO DATABASE EJECUTADO');
 
         return [
             'type' => $this->type,
@@ -40,7 +38,6 @@ class ReservaNotification extends Notification
 
     public function toBroadcast($notifiable)
     {
-        \Log::info('TO BROADCAST EJECUTADO');
 
         return new BroadcastMessage([
             'type' => $this->type,
@@ -52,8 +49,6 @@ class ReservaNotification extends Notification
 
     public function toMail($notifiable)
 {
-
-    \Log::info('TO MAIL EJECUTADO');
 
     return (new MailMessage)
         ->subject('Nueva notificación')

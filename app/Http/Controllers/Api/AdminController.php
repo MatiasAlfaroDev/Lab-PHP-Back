@@ -79,7 +79,13 @@ class AdminController extends Controller
     }
 
     public function pagosTotales(Request $request)
-    {
+    {   
+        if ($request->user()->role !== 'admin') {
+            return response()->json([
+                'message' => 'Forbidden'
+            ], 403);
+        }
+
         try {
             $data = $this->service->getPaymentsSummary();
 
@@ -93,5 +99,16 @@ class AdminController extends Controller
                 'message' => 'Error obteniendo resumen de pagos',
             ], 500);
         }
+    }
+
+    public function cambiarEstadoUsuario(Request $request, $id)
+    {
+        if ($request->user()->role !== 'admin') {
+            return response()->json(['message' => 'Forbidden'], 403);
+        }
+
+        return response()->json(
+            $this->service->cambiarEstadoUsuario($id)
+        );
     }
 }

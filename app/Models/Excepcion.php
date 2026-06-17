@@ -9,15 +9,15 @@ class Excepcion extends Model
     protected $table = 'excepciones';
 
     protected $primaryKey = 'excepcion_id';
-    public $timestamps = false;
-
+    
     protected $fillable = [
-        'profesional_id', 
-        'fecha',      
-        'hora_inicio', 
-        'hora_fin',    
-        'motivo' 
-    ];
+    'profesional_id',
+    'fecha_desde',
+    'fecha_hasta',
+    'hora_inicio',
+    'hora_fin',
+    'motivo'
+];
 
     //Una excepción pertenece a un profesional.
     public function profesional()

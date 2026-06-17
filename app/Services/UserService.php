@@ -72,6 +72,13 @@ class UserService
     {
         $user = User::where('email', $data['email'])->first();
 
+        if (!$user->activo) {
+            return [
+                'success' => false,
+                'message' => 'Usuario bloqueado'
+            ];
+        }
+
         if (!$user || !Hash::check($data['password'], $user->password)) {
             return [
                 'success' => false,
@@ -117,14 +124,23 @@ class UserService
             }
         }
 
+        // BLOQUEO
+        if (!$user->activo) {
+            return [
+                'success' => false,
+                'message' => 'Usuario bloqueado'
+            ];
+        }
+
+        // 🟢 LOGIN OK
         $token = $user->createToken('google')->plainTextToken;
 
         return [
+            'success' => true,
             'user' => $user,
             'token' => $token
         ];
     }
-
     public function updatePassword($user, array $data)
     {
         if (!Hash::check($data['current_password'], $user->password)) {

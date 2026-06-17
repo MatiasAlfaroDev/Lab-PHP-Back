@@ -7,6 +7,7 @@ use App\Models\Servicio;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
+use App\Models\CompraItemPaquete;
 
 class ReservaService
 {
@@ -29,6 +30,31 @@ class ReservaService
                 throw new \Exception('Horario no disponible');
             }
 
+            if (!empty($data['compra_item_paquete_id'])) {
+
+                $item = CompraItemPaquete::with('itemPaquete')
+                    ->findOrFail(
+                        $data['compra_item_paquete_id']
+                    );
+
+                $reservasActivas = Reserva::where(
+                    'compra_item_paquete_id',
+                    $item->compra_item_paquete_id
+                )
+                ->whereNotIn('estado', ['cancelada'])
+                ->count();
+
+                $sesionesCompradas =
+                    $item->itemPaquete->cantidad_sesiones;
+
+                if ($reservasActivas >= $sesionesCompradas) {
+                    throw new \Exception(
+                        'No quedan sesiones disponibles en este paquete'
+                    );
+                }
+
+                $item->decrement('sesiones_restantes');
+            }
             return Reserva::create([
                 'cliente_id' => $user->id,
                 'servicio_id' => $data['servicio_id'],
@@ -194,7 +220,8 @@ class ReservaService
 
             $reserva->update([
                 'fecha' => $fecha,
-                'hora' => $hora 
+                'hora' => $hora,
+                'recordatorio_enviado_at' => null
             ]);
 
             return [
