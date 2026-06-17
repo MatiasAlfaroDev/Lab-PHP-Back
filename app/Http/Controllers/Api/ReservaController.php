@@ -161,95 +161,92 @@ class ReservaController extends Controller
     }
 
     // PUT /reservas/{id}/cancelar
-   // PUT /reservas/{id}/cancelar
-public function cancel(Request $request, $id)
-{
-    $reserva = Reserva::with('servicio')->findOrFail($id);
+    public function cancel(Request $request, $id)
+    {
+        $reserva = Reserva::with('servicio')->findOrFail($id);
+        $servicio = Servicio::findOrFail($reserva->servicio_id);
+        $user = $request->user();
+        $isCliente = (int) $reserva->cliente_id === (int) $user->id;
 
-    $user = $request->user();
-    $isCliente = (int) $reserva->cliente_id === (int) $user->id;
+        $isProfesional = (int) $servicio->profesional_id === (int) $user->id;
 
-    $isProfesional = isset($reserva->profesional_id)
-        ? (int) $reserva->profesional_id === (int) $user->id
-        : false;
+        if (in_array($reserva->estado, ['cancelada', 'finalizada', 'no_asistida'])) {
+            return response()->json([
+                'success' => false,
+                'message' => 'No se puede cancelar esta reserva'
+            ], 409);
+        }
 
-    if (in_array($reserva->estado, ['cancelada', 'finalizada', 'no_asistida'])) {
-        return response()->json([
-            'success' => false,
-            'message' => 'No se puede cancelar esta reserva'
-        ], 409);
-    }
+        $minHoras = $reserva->servicio->min_cancelacion ?? 0;
 
-    $minHoras = $reserva->servicio->min_cancelacion ?? 0;
-
-    $fechaHoraReserva = \Carbon\Carbon::parse(
-        $reserva->fecha . ' ' . substr($reserva->hora, 0, 5)
-    );
-
-    $limiteCancelacion = now()->addHours($minHoras);
-
-    if ($fechaHoraReserva->lessThan($limiteCancelacion)) {
-        return response()->json([
-            'success' => false,
-            'message' => "No podés cancelar con menos de {$minHoras} horas de anticipación"
-        ], 409);
-    }
-
-    if ($reserva->compra_item_paquete_id) {
-
-        $item = CompraItemPaquete::find(
-            $reserva->compra_item_paquete_id
+        $fechaHoraReserva = \Carbon\Carbon::parse(
+            $reserva->fecha . ' ' . substr($reserva->hora, 0, 5)
         );
 
-        if ($item) {
-            $item->increment('sesiones_restantes');
+        $limiteCancelacion = now()->addHours($minHoras);
+
+        if ($fechaHoraReserva->lessThan($limiteCancelacion)) {
+            return response()->json([
+                'success' => false,
+                'message' => "No podés cancelar con menos de {$minHoras} horas de anticipación"
+            ], 409);
         }
-    }
-    $cliente = User::findOrFail($reserva->cliente_id);   
-    $servicio = Servicio::findOrFail($reserva->servicio_id);
-    $profesional = User::findOrFail($servicio->profesional_id);
 
-    if ($isCliente) {
-        /*$profesional->notify(new ReservaNotification(
-            'Reserva Cancelada',
-            "{$cliente->name} canceló una reserva para el servicio: {$servicio->nombre}",
-            $reserva->fecha,
-            $reserva->hora
-        ));
-        $cliente->notify(new ReservaNotification(
-            'Reserva Cancelada',
-            "Has cancelado tu reserva  para el servicio: {$servicio->nombre} con el profesional: {$profesional->name}",
-            $reserva->fecha,
-            $reserva->hora
-        ));*/
+        if ($reserva->compra_item_paquete_id) {
 
-    } elseif ($isProfesional) {
+            $item = CompraItemPaquete::find(
+                $reserva->compra_item_paquete_id
+            );
 
-        //$cliente->notify(new ReservaNotification(
-           // 'Reserva Cancelada',
-            //"Tu reserva para el servicio: {$servicio->nombre} fue cancelada por el profesional: {$profesional->name}",
-           // $reserva->fecha,
-           // $reserva->hora
-        //));
-       /* $profesional->notify(new ReservaNotification(
-            'Reserva Cancelada',
-            "Has cancelado una reserva para el servicio: {$servicio->nombre} con el cliente: {$cliente->name} ",
-            $reserva->fecha,
-            $reserva->hora
-        ));*/
-
-    } 
-
-
-    $reserva->update([
-        'estado' => 'cancelada'
-        ]);
+            if ($item) {
+                $item->increment('sesiones_restantes');
+            }
+        }
         
-    return response()->json([
-        'success' => true,
-        'message' => 'Reserva cancelada'
-    ]);
-}
+        $cliente = User::findOrFail($reserva->cliente_id);   
+        $profesional = User::findOrFail($servicio->profesional_id);
+
+        if ($isCliente) {
+            $profesional->notify(new ReservaNotification(
+                'Reserva Cancelada',
+                "{$cliente->name} canceló una reserva para el servicio: {$servicio->nombre}",
+                $reserva->fecha,
+                $reserva->hora
+            ));
+            $cliente->notify(new ReservaNotification(
+                'Reserva Cancelada',
+                "Has cancelado tu reserva  para el servicio: {$servicio->nombre} con el profesional: {$profesional->name}",
+                $reserva->fecha,
+                $reserva->hora
+            ));
+
+        } elseif ($isProfesional) {
+
+            $cliente->notify(new ReservaNotification(
+             'Reserva Cancelada',
+                "Tu reserva para el servicio: {$servicio->nombre} fue cancelada por el profesional: {$profesional->name}",
+             $reserva->fecha,
+             $reserva->hora
+            ));
+         $profesional->notify(new ReservaNotification(
+                'Reserva Cancelada',
+                "Has cancelado una reserva para el servicio: {$servicio->nombre} con el cliente: {$cliente->name} ",
+                $reserva->fecha,
+                $reserva->hora
+            ));
+
+        } 
+
+
+        $reserva->update([
+            'estado' => 'cancelada'
+            ]);
+            
+        return response()->json([
+            'success' => true,
+            'message' => 'Reserva cancelada'
+        ]);
+    }
 
     // PUT /reservas/{id}/estado
    public function cambiarEstado(Request $request, $id)

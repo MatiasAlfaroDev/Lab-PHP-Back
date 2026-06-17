@@ -18,7 +18,12 @@ class ProfesionalController extends Controller
 
     public function show($id)
     {
-        $user = User::with(['profesional', 'profesional.servicios'])
+        $user = User::with([
+            'profesional',
+            'profesional.servicios' => function ($query) {
+                $query->whereRaw('eliminado = false');
+            }
+        ])
             ->where('id', $id)
             ->where('role', 'professional')
             ->first();
