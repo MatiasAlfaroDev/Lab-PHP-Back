@@ -123,11 +123,18 @@ class ServicioService
         }
 
         $modalidad = isset($data['modalidad']) ? strtolower($data['modalidad']) : $servicio->modalidad;
-        $ubicacion = $this->resolverUbicacion($data + [
-            'direccion' => $servicio->direccion,
-            'latitud'   => $servicio->latitud,
-            'longitud'  => $servicio->longitud,
-        ], $modalidad);
+
+        // Si cambia la dirección sin coordenadas explícitas → re-geocodificar
+        // Si la dirección no cambia → conservar coordenadas existentes
+        $direccionCambiada = array_key_exists('direccion', $data) && $data['direccion'] !== $servicio->direccion;
+        $dataUbicacion = $data;
+        if (!$direccionCambiada) {
+            $dataUbicacion['direccion'] ??= $servicio->direccion;
+            $dataUbicacion['latitud']   ??= $servicio->latitud;
+            $dataUbicacion['longitud']  ??= $servicio->longitud;
+        }
+
+        $ubicacion = $this->resolverUbicacion($dataUbicacion, $modalidad);
 
         $servicio->update([
             'nombre'          => $data['nombre']          ?? $servicio->nombre,

@@ -33,8 +33,9 @@ Route::post('/auth/register', [UserController::class, 'register']);
 // Servicios (público para el front)
 Route::get('/servicios', [ServicioController::class, 'index']);
 
-// Geocoding (público) — convierte dirección en coordenadas
+// Geocoding (público)
 Route::get('/geocoding', [GeocodingController::class, 'geocodificar']);
+Route::get('/geocoding/reverse', [GeocodingController::class, 'geocodificarInverso']);
 
 // Perfil público de profesional
 Route::get('/profesionales/{id}', [ProfesionalController::class, 'show']);
