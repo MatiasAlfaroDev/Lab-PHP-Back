@@ -8,6 +8,8 @@ use App\Models\Profesional;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Laravel\Socialite\Facades\Socialite;
+use Illuminate\Support\Str;
+use App\Notifications\PasswordGeneratedNotification;
 
 class UserService
 {
@@ -109,12 +111,14 @@ class UserService
 
         $user = User::where('email', $googleUser->email)->first();
 
+        $plainPassword = Str::password(12);
+
         if (!$user) {
             $user = User::create([
                 'name' => $googleUser->name,
                 'email' => $googleUser->email,
                 'role' => $role,
-                'password' => bcrypt(uniqid())
+                'password' => bcrypt($plainPassword),
             ]);
 
             if ($role === 'professional') {
@@ -122,9 +126,12 @@ class UserService
             } else {
                 Cliente::create(['user_id' => $user->id]);
             }
-        }
 
-        // BLOQUEO
+            $user->notify(
+            new PasswordGeneratedNotification($plainPassword)
+            );
+        } else {
+             // BLOQUEO
         if (!$user->activo) {
             return [
                 'success' => false,
@@ -132,6 +139,10 @@ class UserService
             ];
         }
 
+
+        }
+
+       
         // 🟢 LOGIN OK
         $token = $user->createToken('google')->plainTextToken;
 
