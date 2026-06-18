@@ -225,6 +225,20 @@ class ReservaService
                 ];
             }
 
+            $ocupado = Reserva::where('servicio_id', $reserva->servicio_id)
+                ->where('fecha', $fecha)
+                ->where('hora', $hora)
+                ->where('reserva_id', '!=', $reserva->reserva_id)
+                ->whereNotIn('estado', ['cancelada'])
+                ->exists();
+
+            if ($ocupado) {
+                return [
+                    'success' => false,
+                    'message' => 'Horario no disponible'
+                ];
+            }
+
             $reserva->update([
                 'fecha' => $fecha,
                 'hora' => $hora,
