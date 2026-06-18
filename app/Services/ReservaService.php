@@ -225,6 +225,8 @@ class ReservaService
                 ];
             }
 
+            $hora = strlen($hora) === 5 ? $hora . ':00' : $hora;
+
             $ocupado = Reserva::where('servicio_id', $reserva->servicio_id)
                 ->where('fecha', $fecha)
                 ->where('hora', $hora)
