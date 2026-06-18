@@ -33,9 +33,16 @@ class ReservaService
             if (!empty($data['compra_item_paquete_id'])) {
 
                 $item = CompraItemPaquete::with('itemPaquete')
-                    ->findOrFail(
-                        $data['compra_item_paquete_id']
+                    ->findOrFail($data['compra_item_paquete_id']);
+
+                if (
+                    (int) $item->itemPaquete->servicio_id !==
+                    (int) $data['servicio_id']
+                ) {
+                    throw new \Exception(
+                        'El servicio no corresponde al item del paquete seleccionado'
                     );
+                }
 
                 $reservasActivas = Reserva::where(
                     'compra_item_paquete_id',
