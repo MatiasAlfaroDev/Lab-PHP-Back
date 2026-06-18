@@ -30,6 +30,7 @@ class Servicio extends Model
         'direccion',
         'latitud',
         'longitud',
+        'estado',
     ];
 
     protected $casts = [

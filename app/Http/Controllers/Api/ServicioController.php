@@ -89,4 +89,16 @@ class ServicioController extends Controller
 
         return response()->json($response, $response['success'] ? 200 : 403);
     }
+
+    public function activarServicio(Request $request, $id)
+    {
+        $response = $this->servicioService->activarServicio((int) $id, $request->user());
+        return response()->json($response, $response['success'] ? 200 : 403);
+    }
+
+    public function desactivarServicio(Request $request, $id)
+    {
+        $response = $this->servicioService->desactivarServicio((int) $id, $request->user());
+        return response()->json($response, $response['success'] ? 200 : 403);
+    }
 }

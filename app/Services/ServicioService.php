@@ -47,7 +47,7 @@ class ServicioService
         return [
             'success' => true,
             'data' => Servicio::with('profesional.user')
-                ->whereRaw('eliminado = false')
+                ->whereRaw('estado', 'activo')
                 ->whereHas('profesional.user', function ($query) {
                     $query->whereRaw('activo = true');
                 })
@@ -67,6 +67,18 @@ class ServicioService
         ];
     }
 
+
+    private function tieneReservasFuturas(int $servicioId): bool
+    {
+        return Reserva::where('servicio_id', $servicioId)
+            ->whereIn('estado', [
+                'pendiente',
+                'confirmada',
+                'pagada'
+            ])
+            ->where('fecha', '>=', now()->toDateString())
+            ->exists();
+    }
     public function nuevoServicio(array $data, $user)
     {
         // Verificar que el usuario sea professional
@@ -112,6 +124,7 @@ class ServicioService
             'direccion'      => $ubicacion['direccion'],
             'latitud'        => $ubicacion['latitud'],
             'longitud'       => $ubicacion['longitud'],
+            'estado'         => "activo"
         ]);
 
         return [
@@ -173,16 +186,7 @@ class ServicioService
             ];
         }
 
-        $tieneReservas = Reserva::where('servicio_id', $id)
-            ->whereIn('estado', [
-                'pendiente',
-                'confirmada',
-                'pagada'
-            ])
-            ->where('fecha', '>=', now()->toDateString())
-            ->exists();
-
-        if ($tieneReservas) {
+        if ($this->tieneReservasFuturas($id)) {
             return [
                 'success' => false,
                 'message' => 'No se puede eliminar el servicio porque tiene reservas futuras.'
@@ -201,7 +205,7 @@ class ServicioService
         DB::table('servicios')
         ->where('servicio_id', $id)
         ->update([
-            'eliminado' => DB::raw('true')
+            'estado' => 'eliminado'
         ]);
 
         return [
@@ -229,16 +233,85 @@ class ServicioService
         }
 
         $servicios = Servicio::where(
-            'profesional_id',
-            $profesional->user_id
+        'profesional_id',
+        $profesional->user_id
         )
-        ->whereRaw('eliminado = false')
+        ->whereIn('estado', ['activo', 'desactivado'])
         ->withCount('reservas')
         ->get();
 
         return [
             'success' => true,
-            'data' => $servicios
+            'data' => [
+                'activos' => $servicios->where('estado', 'activo')->values(),
+                'desactivados' => $servicios->where('estado', 'desactivado')->values(),
+            ]
         ];
     }
+    
+
+    public function activarServicio(int $id, $user)
+    {
+        $servicio = Servicio::findOrFail($id);
+        $profesional = Profesional::where('user_id', $user->id)->first();
+
+        if (!$profesional || $servicio->profesional_id !== $profesional->user_id) {
+            return [
+                'success' => false,
+                'message' => 'No tenés permiso para activar este servicio'
+            ];
+        }
+        if ($servicio->estado === 'eliminado') {
+        return [
+            'success' => false,
+            'message' => 'No se puede activar un servicio eliminado'
+        ];
+    }
+
+        $servicio->estado = 'activo';
+        $servicio->save();
+    }
+
+
+
+       public function desactivarServicio(int $id, $user)
+    {
+        $servicio = Servicio::findOrFail($id);
+        $profesional = Profesional::where('user_id', $user->id)->first();
+
+        if (!$profesional || $servicio->profesional_id !== $profesional->user_id) {
+            return [
+                'success' => false,
+                'message' => 'No tenés permiso para desactivar este servicio'
+            ];
+        }
+
+        if ($this->tieneReservasFuturas($id)) {
+            return [
+                'success' => false,
+                'message' => 'No se puede desactivar el servicio porque tiene reservas futuras.'
+            ];
+        }
+
+        $estaEnPaquete = ItemPaquete::where('servicio_id', $id)->exists();
+
+        if ($estaEnPaquete) {
+            return [
+                'success' => false,
+                'message' => 'No se puede desactivar el servicio porque pertenece a un paquete.'
+            ];
+        }
+
+        DB::table('servicios')
+        ->where('servicio_id', $id)
+        ->update([
+            'estado' => DB::raw('desactivado')
+        ]);
+
+        return [
+            'success' => true,
+            'message' => 'Servicio desactivado correctamente'
+        ];
+    }
+
 }

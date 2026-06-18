@@ -33,10 +33,15 @@ class PaqueteService
                         'Servicio con ID ' . $item['servicio_id'] . ' no encontrado'
                     );
                 }
-
-                if ($servicio->eliminado) {
+                if ($servicio->estado === 'eliminado') {
                     throw new \Exception(
                         'El servicio ' . $servicio->nombre . ' fue eliminado'
+                    );
+                }
+
+                if ($servicio->estado === 'desactivado') {
+                    throw new \Exception(
+                        'El servicio ' . $servicio->nombre . ' se encuentra desactivado'
                     );
                 }
 
@@ -152,6 +157,18 @@ class PaqueteService
                     );
                 }
 
+                 if ($servicio->estado === 'eliminado') {
+                    throw new \Exception(
+                        'El servicio ' . $servicio->nombre . ' fue eliminado'
+                    );
+                }
+
+                if ($servicio->estado === 'desactivado') {
+                    throw new \Exception(
+                        'El servicio ' . $servicio->nombre . ' se encuentra desactivado'
+                    );
+                }
+                
                 if ($servicio->profesional_id != $user->id) {
                     throw new \Exception(
                         'No podés usar servicios de otro profesional'

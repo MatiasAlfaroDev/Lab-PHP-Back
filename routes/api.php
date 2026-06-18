@@ -87,6 +87,11 @@ Route::middleware('auth:sanctum')->group(function () {
      Route::post('/servicios', [ServicioController::class, 'store']);
 
     Route::get('/mis-servicios', [ServicioController::class, 'misServicios']);
+    Route::put('/servicios/{id}/activar', [ServicioController::class, 'activarServicio']);
+    Route::put('/servicios/{id}/desactivar', [ServicioController::class, 'desactivarServicio']);
+
+
+    
 
     Route::middleware('auth:sanctum')->group(function () {
     Route::post('/reservas', [ReservaController::class, 'store']);
