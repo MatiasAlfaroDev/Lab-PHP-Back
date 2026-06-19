@@ -51,4 +51,20 @@ class ExcepcionController extends Controller
             )
         );
     }
+    public function editar($id, Request $request)
+    {
+        $user = auth()->user();
+
+        $data = $request->validate([
+            'fecha_desde' => 'required|date',
+            'fecha_hasta' => 'nullable|date',
+            'hora_inicio' => 'nullable',
+            'hora_fin' => 'nullable',
+            'motivo' => 'nullable|string',
+        ]);
+
+        return response()->json(
+            $this->service->editar($id, $data, $user)
+        );
+    }
 }    

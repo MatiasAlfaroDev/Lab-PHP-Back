@@ -25,46 +25,8 @@ class ExcepcionService
         ];
     }
 
-
-    public function crear(array $data, $user): array
+    private function aplicarExcepcionAReservas(Carbon $inicio, Carbon $fin, $user): array
     {
-        $inicio = Carbon::parse(
-            $data['fecha_desde'] . ' ' . ($data['hora_inicio'] ?? '00:00')
-        );
-
-        $fin = Carbon::parse(
-            ($data['fecha_hasta'] ?? $data['fecha_desde']) . ' ' .
-            ($data['hora_fin'] ?? '23:59')
-        );
-
-        if ($inicio < now()) {
-            return [
-                'success' => false,
-                'message' => 'No se pueden crear excepciones en fechas u horarios pasados.'
-            ];
-        }
-
-        if ($fin <= $inicio) {
-            return [
-                'success' => false,
-                'message' => 'La fecha/hora de fin debe ser posterior al inicio.'
-            ];
-        }
-
-        $existe = Excepcion::where('profesional_id', $user->id)
-            ->where('fecha_desde', $data['fecha_desde'])
-            ->where('fecha_hasta', $data['fecha_hasta'] ?? $data['fecha_desde'])
-            ->where('hora_inicio', $data['hora_inicio'] ?? null)
-            ->where('hora_fin', $data['hora_fin'] ?? null)
-            ->exists();
-
-        if ($existe) {
-            return [
-                'success' => false,
-                'message' => 'Ya existe una excepción con esos datos.'
-            ];
-        }
-
         $detalleReservas = [];
 
         $reservas = Reserva::with('servicio')
@@ -83,18 +45,8 @@ class ExcepcionService
                     $reserva->servicio->duracion
                 );
 
-                return $reservaInicio < $fin
-                    && $reservaFin > $inicio;
+                return $reservaInicio < $fin && $reservaFin > $inicio;
             });
-
-        Excepcion::create([
-            'profesional_id' => $user->id,
-            'fecha_desde' => $data['fecha_desde'],
-            'fecha_hasta' => $data['fecha_hasta'] ?? $data['fecha_desde'],
-            'hora_inicio' => $data['hora_inicio'] ?? null,
-            'hora_fin' => $data['hora_fin'] ?? null,
-            'motivo' => $data['motivo'] ?? null,
-        ]);
 
         foreach ($reservas as $reserva) {
 
@@ -112,13 +64,10 @@ class ExcepcionService
                 $cliente = User::find($reserva->cliente_id);
 
                 if ($cliente) {
-
-                    $mensaje = "Tu reserva para el servicio {$servicio->nombre} fue cancelada debido a una excepción de horario del profesional.";
-
                     $cliente->notify(
                         new ReservaNotification(
                             'Reserva cancelada',
-                            $mensaje,
+                            "Tu reserva para {$servicio->nombre} fue cancelada por una excepción de horario del profesional.",
                             $reserva->fecha,
                             $reserva->hora
                         )
@@ -126,6 +75,44 @@ class ExcepcionService
                 }
             }
         }
+
+        return $detalleReservas;
+    }
+    public function crear(array $data, $user): array
+    {
+        $inicio = Carbon::parse(
+            $data['fecha_desde'] . ' ' . ($data['hora_inicio'] ?? '00:00')
+        );
+
+        $fin = Carbon::parse(
+            ($data['fecha_hasta'] ?? $data['fecha_desde']) . ' ' .
+            ($data['hora_fin'] ?? '23:59')
+        );
+
+        if ($inicio < now()) {
+            return [
+                'success' => false,
+                'message' => 'No se pueden crear excepciones en el pasado.'
+            ];
+        }
+
+        if ($fin <= $inicio) {
+            return [
+                'success' => false,
+                'message' => 'La fecha de fin debe ser posterior al inicio.'
+            ];
+        }
+
+        Excepcion::create([
+            'profesional_id' => $user->id,
+            'fecha_desde' => $data['fecha_desde'],
+            'fecha_hasta' => $data['fecha_hasta'] ?? $data['fecha_desde'],
+            'hora_inicio' => $data['hora_inicio'] ?? null,
+            'hora_fin' => $data['hora_fin'] ?? null,
+            'motivo' => $data['motivo'] ?? null,
+        ]);
+
+        $detalleReservas = $this->aplicarExcepcionAReservas($inicio, $fin, $user);
 
         $user->notify(
             new ExcepcionNotification(
@@ -137,10 +124,85 @@ class ExcepcionService
         return [
             'success' => true,
             'message' => 'Excepción creada y reservas notificadas',
-            'reservas_afectadas' => count($reservas)
+            'reservas_afectadas' => count($detalleReservas)
         ];
     }
 
+    public function editar(int $excepcionId, array $data, $user): array
+    {
+        $excepcion = Excepcion::find($excepcionId);
+
+        if (!$excepcion) {
+            return [
+                'success' => false,
+                'message' => 'Excepción no encontrada'
+            ];
+        }
+
+        if ((int)$excepcion->profesional_id !== (int)$user->id) {
+            return [
+                'success' => false,
+                'message' => 'No tenés permiso'
+            ];
+        }
+
+        $ahora = Carbon::now();
+
+        $fechaDesde = Carbon::parse($excepcion->fecha_desde);
+        $horaInicio = $excepcion->hora_inicio
+            ? Carbon::parse($excepcion->fecha_desde . ' ' . $excepcion->hora_inicio)
+            : null;
+
+        $esFutura = false;
+
+        if ($fechaDesde->isFuture()) {
+            $esFutura = true;
+        } elseif ($fechaDesde->isToday()) {
+            if (!$horaInicio || $horaInicio->gt($ahora)) {
+                $esFutura = true;
+            }
+        }
+
+        if (!$esFutura) {
+            return [
+                'success' => false,
+                'message' => 'No se puede editar una excepción pasada'
+            ];
+        }
+
+        $excepcion->update([
+            'fecha_desde' => $data['fecha_desde'],
+            'fecha_hasta' => $data['fecha_hasta'] ?? $data['fecha_desde'],
+            'hora_inicio' => $data['hora_inicio'] ?? null,
+            'hora_fin' => $data['hora_fin'] ?? null,
+            'motivo' => $data['motivo'] ?? null,
+        ]);
+
+        $inicio = Carbon::parse(
+            $data['fecha_desde'] . ' ' . ($data['hora_inicio'] ?? '00:00')
+        );
+
+        $fin = Carbon::parse(
+            ($data['fecha_hasta'] ?? $data['fecha_desde']) . ' ' .
+            ($data['hora_fin'] ?? '23:59')
+        );
+
+        $detalleReservas = $this->aplicarExcepcionAReservas($inicio, $fin, $user);
+
+        $user->notify(
+            new ExcepcionNotification(
+                'Excepción actualizada correctamente.',
+                $detalleReservas
+            )
+        );
+
+        return [
+            'success' => true,
+            'message' => 'Excepción actualizada y reservas notificadas',
+            'reservas_afectadas' => count($detalleReservas)
+        ];
+    }
+    
     public function eliminar(int $excepcionId, $user): array
     {
         $excepcion = Excepcion::find($excepcionId);
