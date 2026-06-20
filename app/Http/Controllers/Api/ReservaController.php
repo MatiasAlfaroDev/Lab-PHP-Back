@@ -32,10 +32,10 @@ class ReservaController extends Controller
         ]);
 
         
-        // 🔥 Servicio
+        //Servicio
         $servicio = Servicio::findOrFail($request->servicio_id);
 
-        // 🔥 Modalidad (NO TOCAR tu lógica)
+        //Modalidad 
         if ($servicio->modalidad === 'hibrido') {
             $modalidad = $request->modalidad;
         } else {
@@ -92,22 +92,18 @@ class ReservaController extends Controller
 
 
 
-        // 🔥 Usuarios
+        // Usuarios
         $cliente = $request->user();
         $profesional = User::findOrFail($servicio->profesional_id);
 
-        // =========================================================
-        // 🔔 NOTIFICACIÓN 1: PROFESIONAL
-        // =========================================================
+        // NOTIFICACIÓN 1: PROFESIONAL
         $profesional->notify(new ReservaNotification(
             'Reserva ',
             "{$cliente->name} realizó una reserva para el servicio: {$servicio->nombre}",
             $reserva->fecha, $reserva->hora
         ));
 
-    // =========================================================
-    // 🔔 NOTIFICACIÓN 2: CLIENTE
-    // =========================================================
+    // NOTIFICACIÓN 2: CLIENTE
     $cliente->notify(new ReservaNotification(
         'Reserva pendiente',
         "Tu reserva para el servicio: {$servicio->nombre} quedó pendiente de aprobación por el profesional: {$profesional->name} ",

@@ -1,8 +1,6 @@
 <?php
 
 namespace App\Services;
-
-use App\Helpers\FeriadoHelper;
 use App\Models\Disponibilidad;
 use App\Models\Reserva;
 use App\Models\Servicio;
@@ -145,7 +143,7 @@ class DisponibilidadService
 
     $slots = [];
 
-    // 🔥 1. CHECK GLOBAL: día completamente bloqueado
+    // 1. CHECK GLOBAL: día completamente bloqueado
     $diaBloqueado = $excepciones->contains(function ($ex) {
         return is_null($ex->hora_inicio) && is_null($ex->hora_fin);
     });
@@ -164,7 +162,7 @@ class DisponibilidadService
             $slotFin = $cursor->copy()->addMinutes($duracion);
             $slotStr = $cursor->format('H:i');
 
-            // 🔥 2. CHECK EXCEPCIONES HORARIAS
+            //2. CHECK EXCEPCIONES HORARIAS
             $bloqueado = $excepciones->contains(function ($ex) use ($cursor, $slotFin, $fecha) {
 
                 if (is_null($ex->hora_inicio) || is_null($ex->hora_fin)) {
@@ -177,7 +175,7 @@ class DisponibilidadService
                 return $cursor->lt($finEx) && $slotFin->gt($inicioEx);
             });
 
-            // 🔥 3. MIN AVISO
+            //3. MIN AVISO
             $cumpleAviso = true;
 
             if ($carbon->isToday()) {

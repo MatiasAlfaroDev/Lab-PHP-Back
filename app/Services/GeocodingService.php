@@ -6,11 +6,11 @@ use Illuminate\Support\Facades\Http;
 
 class GeocodingService
 {
-    // 🔎 DIRECCIÓN -> COORDENADAS
+    //DIRECCIÓN -> COORDENADAS
     public function geocodificar(string $direccion): ?array
     {
         $response = Http::withHeaders([
-            'User-Agent' => 'TuApp/1.0 (julianamendezcaputi@gmail.com)'
+            'User-Agent' => 'CitaPro/1.0 (citapro.php@gmail.com)'
         ])->get('https://nominatim.openstreetmap.org/search', [
             'q' => $direccion,
             'format' => 'json',
@@ -30,11 +30,11 @@ class GeocodingService
         ];
     }
 
-    // 📍 COORDENADAS -> DIRECCIÓN
+    // COORDENADAS -> DIRECCIÓN
     public function geocodificarInverso(float $lat, float $lng): ?array
     {
         $response = Http::withHeaders([
-            'User-Agent' => 'TuApp/1.0 (julianamendezcaputi@gmail.com)'
+            'User-Agent' => 'CitaPro/1.0 (citapro.php@gmail.com)'
         ])->get('https://nominatim.openstreetmap.org/reverse', [
             'lat'    => $lat,
             'lon'    => $lng,

@@ -20,7 +20,7 @@ class EnviarRecordatoriosReserva extends Command
     {
         $now = Carbon::now('America/Montevideo');
 
-        // Ventana de 24h (con tolerancia para que no falle si el cron corre tarde o temprano)
+        // Ventana de 24h con tolerancia
         $desde = $now->copy()->addHours(23);
         $hasta = $now->copy()->addHours(25);
 

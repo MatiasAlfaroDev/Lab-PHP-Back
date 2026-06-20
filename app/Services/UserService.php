@@ -31,8 +31,7 @@ class UserService
             if ($user->role === 'professional') {
                 Profesional::create([
                     'user_id' => $user->id,
-                    'descripcion' => '',
-                    'ubicacion' => ''
+                    'descripcion' => ''
                 ]);
             }
 
@@ -143,7 +142,7 @@ class UserService
         }
 
        
-        // 🟢 LOGIN OK
+        //LOGIN OK
         $token = $user->createToken('google')->plainTextToken;
 
         return [

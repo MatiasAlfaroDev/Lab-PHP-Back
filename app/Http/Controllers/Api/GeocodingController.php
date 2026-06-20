@@ -11,7 +11,7 @@ class GeocodingController extends Controller
 {
     public function __construct(private GeocodingService $geocodingService) {}
 
-    // GET /geocoding?address=Av. Arequipa 123, Lima
+    // GET /geocoding?address=18 de Julio 1234, Montevideo
     public function geocodificar(Request $request)
     {
         $validator = Validator::make($request->all(), [
@@ -34,7 +34,7 @@ class GeocodingController extends Controller
         return response()->json(['success' => true, 'data' => $resultado]);
     }
 
-    // GET /geocoding/reverse?lat=-12.0464&lng=-77.0428
+    // GET /geocoding/reverse?lat=-34.9011&lng=-56.1645
     public function geocodificarInverso(Request $request)
     {
         $validator = Validator::make($request->all(), [

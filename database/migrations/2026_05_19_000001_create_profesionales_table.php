@@ -16,7 +16,6 @@ return new class extends Migration
                   ->cascadeOnDelete();
 
             $table->text('descripcion')->nullable();
-            $table->text('ubicacion')->nullable();
         });
     }
 

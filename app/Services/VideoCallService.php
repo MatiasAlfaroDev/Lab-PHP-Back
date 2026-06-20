@@ -12,18 +12,18 @@ class VideoCallService
         $apiSecret = env('LIVEKIT_API_SECRET');
         $livekitUrl = env('LIVEKIT_URL');
 
-        // 🧠 1 room por reserva (esto es correcto)
+        // 1 room por reserva 
         $roomName = "reserva_" . $reserva->reserva_id;
 
         $now = time();
 
-        // ⏱️ token válido por 1 hora (ok para tu sistema)
+        //token válido por 1 hora 
         $exp = $now + 3600;
 
-        // 🧑 identidad real del usuario (IMPORTANTE)
+        //identidad real del usuario
         $identity = (string) $user->id;
 
-        // 🎥 permisos dentro de la sala
+        //permisos dentro de la sala
         $videoGrants = [
             "roomJoin" => true,
             "room" => $roomName,
@@ -31,7 +31,7 @@ class VideoCallService
             "canSubscribe" => true,
         ];
 
-        // 🔐 payload JWT LiveKit
+        //payload JWT LiveKit
         $payload = [
             "iss" => $apiKey,
             "sub" => $identity,
@@ -40,7 +40,7 @@ class VideoCallService
             "video" => $videoGrants,
         ];
 
-        // 🔑 generar token
+        //generar token
         $token = JWT::encode($payload, $apiSecret, 'HS256');
 
         return [

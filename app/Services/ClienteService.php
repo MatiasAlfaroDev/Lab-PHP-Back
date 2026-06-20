@@ -40,11 +40,7 @@ class ClienteService
 
         $clienteId = $reserva->cliente_id;
 
-        /*
-        |--------------------------------------------------------------------------
-        | SESIONES INDIVIDUALES
-        |--------------------------------------------------------------------------
-        */
+        // SESIONES INDIVIDUALES
         if ($reserva->servicio_id !== null) {
 
             if (!isset($clientesSesion[$clienteId])) {
@@ -78,11 +74,7 @@ class ClienteService
             }
         }
 
-        /*
-        |--------------------------------------------------------------------------
-        | PAQUETES
-        |--------------------------------------------------------------------------
-        */
+        //PAQUETES
         if ($reserva->compra_item_paquete_id !== null) {
 
             if (!isset($clientesPaquete[$clienteId])) {

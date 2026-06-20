@@ -25,8 +25,6 @@ class Servicio extends Model
         'min_cancelacion',
         'min_aviso',
         'max_anticipacion_dias',
-        'aceptar_automaticamente',
-        'permitir_feriados',
         'direccion',
         'latitud',
         'longitud',

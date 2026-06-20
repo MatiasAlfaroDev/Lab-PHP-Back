@@ -183,8 +183,6 @@ class ReservaService
    public function actualizarEstadoVideollamada($reservaId, $estado)
     {
         $reserva = Reserva::findOrFail($reservaId);
-
-        // evitar updates innecesarios
         if ($reserva->estado_videollamada === $estado) {
             return $reserva;
         }
