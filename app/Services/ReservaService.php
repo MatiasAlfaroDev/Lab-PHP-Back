@@ -180,6 +180,16 @@ class ReservaService
         return ['success' => true, 'message' => 'Reserva marcada como no asistida'];
     }
 
+    public function marcarAsistida(Reserva $reserva)
+    {
+        if ($reserva->estado !== 'en_curso') {
+            return ['success' => false, 'message' => 'Estado no permitido'];
+        }
+
+        $reserva->update(['estado' => 'finalizada']);
+        return ['success' => true, 'message' => 'Reserva marcada como asistida'];
+    }
+
    public function actualizarEstadoVideollamada($reservaId, $estado)
     {
         $reserva = Reserva::findOrFail($reservaId);

@@ -74,4 +74,5 @@ class ActualizarReservasEnCurso extends Command
     }
 }
 
-//comando: php artisan schedule:work 
+// Railway ejecuta este comando vía cron (* * * * *), no como daemon:
+// php artisan schedule:run 
