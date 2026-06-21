@@ -7,6 +7,8 @@ use App\Models\Servicio;
 use App\Models\Profesional;
 use App\Models\User;
 use App\Models\ItemPaquete;
+use App\Models\CompraItemPaquete;
+use App\Models\Reserva;
 use Illuminate\Support\Facades\DB;
 
 class PaqueteService
@@ -75,6 +77,7 @@ class PaqueteService
     public function listarPaquetes()
     {
         return Paquete::with('servicios')
+            ->whereRaw('eliminado = false')
             ->whereHas('servicios.profesional.user', function ($query) {
                 $query->whereRaw('activo = true');
             })
@@ -84,6 +87,7 @@ class PaqueteService
     public function listarMisPaquetes($user)
     {
         return Paquete::with('servicios')
+            ->whereRaw('eliminado = false')
             ->whereHas('servicios', function ($query) use ($user) {
                 $query->where('profesional_id', $user->id);
             })
@@ -93,6 +97,7 @@ class PaqueteService
     public function obtenerPaquete($id)
     {
         return Paquete::with('servicios')
+            ->whereRaw('eliminado = false')
             ->find($id);
     }
 
@@ -195,24 +200,48 @@ class PaqueteService
             ];
         }
 
-        $esDueno = true;
-
+        // validar dueño
         foreach ($paquete->items as $item) {
-
             if ($item->servicio->profesional_id != $user->id) {
-                $esDueno = false;
-                break;
+                return [
+                    'success' => false,
+                    'message' => 'No autorizado'
+                ];
             }
         }
 
-        if (!$esDueno) {
+        // validar reservas activas
+        $tieneReservasActivas = Reserva::whereHas('compraItemPaquete.compraPaquete', function ($q) use ($id) {
+                $q->where('paquete_id', $id);
+            })
+            ->whereIn('estado', ['pendiente', 'confirmada', 'pagada', 'en_curso'])
+            ->exists();
+
+        if ($tieneReservasActivas) {
             return [
                 'success' => false,
-                'message' => 'No autorizado'
+                'message' => 'No se puede eliminar el paquete porque tiene reservas activas'
+            ];
+        }
+        $tieneSesionesPendientes = CompraItemPaquete::whereHas('compraPaquete', function ($q) use ($id) {
+                $q->where('paquete_id', $id);
+            })
+            ->where('sesiones_restantes', '>', 0)
+            ->exists();
+
+        if ($tieneSesionesPendientes) {
+            return [
+                'success' => false,
+                'message' => 'No se puede eliminar el paquete porque aún tiene sesiones sin consumir'
             ];
         }
 
-        $paquete->delete();
+        // soft delete
+        DB::table('paquetes')
+        ->where('paquete_id', $id)
+        ->update([
+            'eliminado' => DB::raw('true')
+        ]);
 
         return [
             'success' => true,
