@@ -45,7 +45,6 @@ class DisponibilidadController extends Controller
         'disponibilidades.*.dia_semana'  => 'required|in:lunes,martes,miercoles,jueves,viernes,sabado,domingo',
         'disponibilidades.*.hora_inicio' => 'required|date_format:H:i',
         'disponibilidades.*.hora_fin'    => 'required|date_format:H:i',
-
         'min_aviso'              => 'nullable|integer|min:0',
         'min_cancelacion'        => 'nullable|integer|min:0',
         'max_anticipacion_dias'  => 'nullable|integer|min:1',

@@ -111,6 +111,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/excepciones', [ExcepcionController::class, 'index']);
     Route::post('/excepciones', [ExcepcionController::class, 'store']);
     Route::delete('/excepciones/{id}', [ExcepcionController::class, 'destroy']);
+    Route::put('/excepciones/{id}', [ExcepcionController::class, 'editar']);
+
 
     /*
     |------------------------------------------

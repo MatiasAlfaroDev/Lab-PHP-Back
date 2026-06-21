@@ -9,20 +9,15 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('servicios', function (Blueprint $table) {
-            // Horas mínimas de anticipación para reservar
-            $table->integer('min_aviso')->default(24)->after('min_cancelacion');
-            // Días máximos a futuro para reservar
-            $table->integer('max_anticipacion_dias')->default(60)->after('min_aviso');
+            $table->boolean('eliminado')
+                ->default(false);
         });
     }
 
     public function down(): void
     {
         Schema::table('servicios', function (Blueprint $table) {
-            $table->dropColumn([
-                'min_aviso',
-                'max_anticipacion_dias'
-            ]);
+            $table->dropColumn('eliminado');
         });
     }
 };

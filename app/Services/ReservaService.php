@@ -33,9 +33,16 @@ class ReservaService
             if (!empty($data['compra_item_paquete_id'])) {
 
                 $item = CompraItemPaquete::with('itemPaquete')
-                    ->findOrFail(
-                        $data['compra_item_paquete_id']
+                    ->findOrFail($data['compra_item_paquete_id']);
+
+                if (
+                    (int) $item->itemPaquete->servicio_id !==
+                    (int) $data['servicio_id']
+                ) {
+                    throw new \Exception(
+                        'El servicio no corresponde al item del paquete seleccionado'
                     );
+                }
 
                 $reservasActivas = Reserva::where(
                     'compra_item_paquete_id',
@@ -176,8 +183,6 @@ class ReservaService
    public function actualizarEstadoVideollamada($reservaId, $estado)
     {
         $reserva = Reserva::findOrFail($reservaId);
-
-        // evitar updates innecesarios
         if ($reserva->estado_videollamada === $estado) {
             return $reserva;
         }
@@ -215,6 +220,22 @@ class ReservaService
                 return [
                     'success' => false,
                     'message' => "No podés reprogramar con menos de {$minHoras} horas de anticipación"
+                ];
+            }
+
+            $hora = strlen($hora) === 5 ? $hora . ':00' : $hora;
+
+            $ocupado = Reserva::where('servicio_id', $reserva->servicio_id)
+                ->where('fecha', $fecha)
+                ->where('hora', $hora)
+                ->where('reserva_id', '!=', $reserva->reserva_id)
+                ->whereNotIn('estado', ['cancelada'])
+                ->exists();
+
+            if ($ocupado) {
+                return [
+                    'success' => false,
+                    'message' => 'Horario no disponible'
                 ];
             }
 

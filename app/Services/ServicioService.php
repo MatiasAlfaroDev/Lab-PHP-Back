@@ -4,8 +4,12 @@ namespace App\Services;
 
 use App\Models\Servicio;
 use App\Models\Profesional;
+use App\Models\Reserva;
+use App\Models\ItemPaquete;
+use App\Models\User;
 use App\Models\Calificacion;
 use App\Services\GeocodingService;
+use Illuminate\Support\Facades\DB;
 
 class ServicioService
 {
@@ -42,7 +46,11 @@ class ServicioService
     {
         return [
             'success' => true,
-            'data' => Servicio::with('profesional')
+            'data' => Servicio::with('profesional.user')
+                ->whereRaw('eliminado = false')
+                ->whereHas('profesional.user', function ($query) {
+                    $query->whereRaw('activo = true');
+                })
                 ->get()
                 ->map(function ($servicio) {
                     $stats = Calificacion::whereHas('reserva', function ($q) use ($servicio) {
@@ -159,12 +167,47 @@ class ServicioService
         $profesional = Profesional::where('user_id', $user->id)->first();
 
         if (!$profesional || $servicio->profesional_id !== $profesional->user_id) {
-            return ['success' => false, 'message' => 'No tenés permiso para eliminar este servicio'];
+            return [
+                'success' => false,
+                'message' => 'No tenés permiso para eliminar este servicio'
+            ];
         }
 
-        $servicio->delete();
+        $tieneReservas = Reserva::where('servicio_id', $id)
+            ->whereIn('estado', [
+                'pendiente',
+                'confirmada',
+                'pagada'
+            ])
+            ->where('fecha', '>=', now()->toDateString())
+            ->exists();
 
-        return ['success' => true, 'message' => 'Servicio eliminado'];
+        if ($tieneReservas) {
+            return [
+                'success' => false,
+                'message' => 'No se puede eliminar el servicio porque tiene reservas futuras.'
+            ];
+        }
+
+        $estaEnPaquete = ItemPaquete::where('servicio_id', $id)->exists();
+
+        if ($estaEnPaquete) {
+            return [
+                'success' => false,
+                'message' => 'No se puede eliminar el servicio porque pertenece a un paquete.'
+            ];
+        }
+
+        DB::table('servicios')
+        ->where('servicio_id', $id)
+        ->update([
+            'eliminado' => DB::raw('true')
+        ]);
+
+        return [
+            'success' => true,
+            'message' => 'Servicio eliminado correctamente'
+        ];
     }
 
     public function obtenerServiciosProfesional($user)
@@ -189,6 +232,7 @@ class ServicioService
             'profesional_id',
             $profesional->user_id
         )
+        ->whereRaw('eliminado = false')
         ->withCount('reservas')
         ->get();
 

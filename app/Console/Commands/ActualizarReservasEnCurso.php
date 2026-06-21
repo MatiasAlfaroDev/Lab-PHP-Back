@@ -15,6 +15,29 @@ class ActualizarReservasEnCurso extends Command
     {
         $now = Carbon::now();
 
+        // DEVOLVER SESIONES DE PAQUETES PENDIENTES VENCIDOS
+        Reserva::where('estado', 'pendiente')
+            ->whereRaw("(fecha + hora) < NOW()")
+            ->get()
+            ->each(function ($reserva) {
+
+            
+                if ($reserva->compra_item_paquete_id) {
+
+                    $item = \App\Models\CompraItemPaquete::find(
+                        $reserva->compra_item_paquete_id
+                    );
+
+                    if ($item) {
+                        $item->increment('sesiones_restantes');
+                    }
+                }
+
+                $reserva->update([
+                    'estado' => 'cancelada'
+                ]);
+            });
+
         Reserva::with('servicio')
             ->whereIn('estado', ['confirmada', 'pagada', 'en_curso'])
             ->get()

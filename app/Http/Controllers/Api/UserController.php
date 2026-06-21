@@ -108,4 +108,22 @@ class UserController extends Controller
             ])
         );
     }
+
+    public function updatePassword(Request $request)
+{
+    $data = $request->validate([
+        'current_password' => 'required',
+        'password' => 'required|min:8|confirmed',
+    ]);
+
+    $response = $this->userService->updatePassword(
+        $request->user(),
+        $data
+    );
+
+    return response()->json(
+        $response,
+        $response['success'] ? 200 : 400
+    );
+}
 }

@@ -6,55 +6,39 @@ use Illuminate\Support\Facades\Http;
 
 class GeocodingService
 {
-    private string $apiKey;
-
-    public function __construct()
-    {
-        $this->apiKey = config('services.google.maps_api_key', '');
-    }
-
+    //DIRECCIÓN -> COORDENADAS
     public function geocodificar(string $direccion): ?array
     {
-        if (empty($this->apiKey)) {
-            return null;
-        }
-
-        $response = Http::get('https://maps.googleapis.com/maps/api/geocode/json', [
-            'address'  => $direccion,
-            'key'      => $this->apiKey,
-            'language' => 'es',
+        $response = Http::withHeaders([
+            'User-Agent' => 'CitaPro/1.0 (citapro.php@gmail.com)'
+        ])->get('https://nominatim.openstreetmap.org/search', [
+            'q' => $direccion,
+            'format' => 'json',
+            'limit' => 1,
         ]);
 
-        if (!$response->successful()) {
+        if (!$response->successful() || empty($response->json())) {
             return null;
         }
 
-        $data = $response->json();
-
-        if (($data['status'] ?? '') !== 'OK' || empty($data['results'])) {
-            return null;
-        }
-
-        $resultado = $data['results'][0];
-        $location  = $resultado['geometry']['location'];
+        $data = $response->json()[0];
 
         return [
-            'latitud'              => $location['lat'],
-            'longitud'             => $location['lng'],
-            'direccion_formateada' => $resultado['formatted_address'],
+            'latitud'              => (float) $data['lat'],
+            'longitud'             => (float) $data['lon'],
+            'direccion_formateada' => $data['display_name'],
         ];
     }
 
+    // COORDENADAS -> DIRECCIÓN
     public function geocodificarInverso(float $lat, float $lng): ?array
     {
-        if (empty($this->apiKey)) {
-            return null;
-        }
-
-        $response = Http::get('https://maps.googleapis.com/maps/api/geocode/json', [
-            'latlng'   => "{$lat},{$lng}",
-            'key'      => $this->apiKey,
-            'language' => 'es',
+        $response = Http::withHeaders([
+            'User-Agent' => 'CitaPro/1.0 (citapro.php@gmail.com)'
+        ])->get('https://nominatim.openstreetmap.org/reverse', [
+            'lat'    => $lat,
+            'lon'    => $lng,
+            'format' => 'json',
         ]);
 
         if (!$response->successful()) {
@@ -63,16 +47,14 @@ class GeocodingService
 
         $data = $response->json();
 
-        if (($data['status'] ?? '') !== 'OK' || empty($data['results'])) {
+        if (!isset($data['display_name'])) {
             return null;
         }
-
-        $resultado = $data['results'][0];
 
         return [
             'latitud'              => $lat,
             'longitud'             => $lng,
-            'direccion_formateada' => $resultado['formatted_address'],
+            'direccion_formateada' => $data['display_name'],
         ];
     }
 }

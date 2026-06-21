@@ -18,8 +18,7 @@ class Profesional extends Model
 
     protected $fillable = [
         'user_id', // Recibirá el id del User
-        'descripcion',
-        'ubicacion'
+        'descripcion'
     ];
 
     //Relación inversa: Un profesional "es" un usuario. Vinculamos nuestro profesionalId con el id del User.
