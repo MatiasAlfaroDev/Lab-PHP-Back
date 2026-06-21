@@ -42,28 +42,83 @@ class ServicioService
         return compact('direccion', 'latitud', 'longitud');
     }
 
-    public function listarTodos()
+    public function listarTodos(array $filtros = [])
     {
+        $query = Servicio::with('profesional.user')
+            ->whereRaw('eliminado = false')
+            ->whereHas('profesional.user', function ($query) {
+                $query->whereRaw('activo = true');
+            });
+
+        if (!empty($filtros['q'])) {
+            $texto = $filtros['q'];
+            $query->where(function ($query) use ($texto) {
+                $query->where('nombre', 'like', "%{$texto}%")
+                      ->orWhere('descripcion', 'like', "%{$texto}%");
+            });
+        }
+
+        if (!empty($filtros['tipo'])) {
+            $query->where('tipo', $filtros['tipo']);
+        }
+
+        if (!empty($filtros['modalidad'])) {
+            $query->where('modalidad', $filtros['modalidad']);
+        }
+
+        if (is_numeric($filtros['precio_min'] ?? null)) {
+            $query->where('precio', '>=', $filtros['precio_min']);
+        }
+
+        if (is_numeric($filtros['precio_max'] ?? null)) {
+            $query->where('precio', '<=', $filtros['precio_max']);
+        }
+
+        if (
+            is_numeric($filtros['lat'] ?? null) &&
+            is_numeric($filtros['lng'] ?? null) &&
+            is_numeric($filtros['radio_km'] ?? null)
+        ) {
+            $lat = $filtros['lat'];
+            $lng = $filtros['lng'];
+            $haversine = "(6371 * acos(cos(radians($lat)) * cos(radians(latitud)) "
+                . "* cos(radians(longitud) - radians($lng)) + sin(radians($lat)) * sin(radians(latitud))))";
+
+            $query->whereNotNull('latitud')
+                  ->whereNotNull('longitud')
+                  ->whereRaw("$haversine <= ?", [$filtros['radio_km']]);
+        }
+
+        if (($filtros['orden'] ?? null) === 'precio_asc') {
+            $query->orderBy('precio', 'asc');
+        } elseif (($filtros['orden'] ?? null) === 'precio_desc') {
+            $query->orderBy('precio', 'desc');
+        }
+
+        $calcularRating = function ($servicio) {
+            $stats = Calificacion::whereHas('reserva', function ($q) use ($servicio) {
+                $q->where('servicio_id', $servicio->servicio_id);
+            })
+            ->selectRaw('AVG(puntuacion) as promedio, COUNT(*) as cantidad')
+            ->first();
+
+            $servicio->promedio = round($stats->promedio ?? 0, 1);
+            $servicio->cantidad_calificaciones = $stats->cantidad ?? 0;
+
+            return $servicio;
+        };
+
+        // Sin "page"/"per_page" se mantiene el comportamiento original (lista completa, sin paginar).
+        if (isset($filtros['page']) || isset($filtros['per_page'])) {
+            $servicios = $query->paginate((int) ($filtros['per_page'] ?? 20));
+            $servicios->getCollection()->transform($calcularRating);
+        } else {
+            $servicios = $query->get()->map($calcularRating);
+        }
+
         return [
             'success' => true,
-            'data' => Servicio::with('profesional.user')
-                ->whereRaw('eliminado = false')
-                ->whereHas('profesional.user', function ($query) {
-                    $query->whereRaw('activo = true');
-                })
-                ->get()
-                ->map(function ($servicio) {
-                    $stats = Calificacion::whereHas('reserva', function ($q) use ($servicio) {
-                        $q->where('servicio_id', $servicio->servicio_id);
-                    })
-                    ->selectRaw('AVG(puntuacion) as promedio, COUNT(*) as cantidad')
-                    ->first();
-
-                    $servicio->promedio = round($stats->promedio ?? 0, 1);
-                    $servicio->cantidad_calificaciones = $stats->cantidad ?? 0;
-
-                    return $servicio;
-                })
+            'data' => $servicios,
         ];
     }
 

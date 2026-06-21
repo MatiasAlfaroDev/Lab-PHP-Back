@@ -3,10 +3,44 @@
 namespace App\Services;
 
 use App\Models\Reserva;
+use App\Models\CompraItemPaquete;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 class ClienteService
 {
+    public function resumen($user)
+    {
+        $proximaReserva = Reserva::where('cliente_id', $user->id)
+            ->whereIn('estado', ['pendiente', 'confirmada', 'pagada', 'en_curso'])
+            ->where(function ($q) {
+                $q->where('fecha', '>', now()->toDateString())
+                  ->orWhere(function ($q) {
+                      $q->whereDate('fecha', now()->toDateString())
+                        ->where('hora', '>=', now()->format('H:i:s'));
+                  });
+            })
+            ->with('servicio')
+            ->orderBy('fecha')
+            ->orderBy('hora')
+            ->first();
+
+        $paquetesActivos = CompraItemPaquete::whereHas('compraPaquete', function ($q) use ($user) {
+                $q->where('cliente_id', $user->id);
+            })
+            ->where('sesiones_restantes', '>', 0)
+            ->with('itemPaquete.servicio')
+            ->get();
+
+        return [
+            'success' => true,
+            'data' => [
+                'proxima_reserva' => $proximaReserva,
+                'paquetes_activos' => $paquetesActivos,
+                'notificaciones_no_leidas' => $user->unreadNotifications()->count(),
+            ],
+        ];
+    }
+
    public function getClientesDelProfesional(int $profesionalId)
 {
     $reservas = Reserva::with([

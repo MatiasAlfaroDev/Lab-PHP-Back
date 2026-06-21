@@ -69,6 +69,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::put('/profile/password', [UserController::class, 'updatePassword']);
     Route::put('/profesional/profile', [ProfesionalController::class, 'updateProfile']);
     Route::put('/client/profile', [ClienteController::class, 'updateProfile']);
+    Route::get('/cliente/resumen', [ClienteController::class, 'resumen']);
 
     Route::get('/admin/dashboard', [AdminController::class, 'dashboard']);
     Route::get('/admin/clients', [AdminController::class, 'clients']);
@@ -100,6 +101,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::put('/reservas/{id}/cancelar', [ReservaController::class, 'cancel']);
     Route::put('/reservas/{id}/estado', [ReservaController::class, 'cambiarEstado']);
     Route::put('/reservas/{id}/no-asistida', [ReservaController::class, 'noAsistida']);
+    Route::put('/reservas/{id}/asistida', [ReservaController::class, 'asistida']);
     Route::post('/reservas/{id}/pago-presencial', [PagoController::class, 'confirmarPresencial']);
     Route::post('/reservas/{reservaId}/calificar',[CalificacionController::class, 'crear']);
     Route::get('/profesionales/{id}/calificaciones', [CalificacionController::class, 'listarPorProfesional']);

@@ -1,0 +1,8 @@
+{
+  "$schema": "https://railway.com/railway.schema.json",
+  "deploy": {
+    "startCommand": "php artisan schedule:run",
+    "cronSchedule": "* * * * *",
+    "restartPolicyType": "NEVER"
+  }
+}

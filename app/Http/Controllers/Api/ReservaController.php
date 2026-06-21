@@ -361,6 +361,18 @@ class ReservaController extends Controller
         );
     }
 
+    // PUT /reservas/{id}/asistida
+    public function asistida($id)
+    {
+        $reserva = Reserva::findOrFail($id);
+        $result = $this->reservaService->marcarAsistida($reserva);
+
+        return response()->json(
+            $result,
+            $result['success'] ? 200 : 400
+        );
+    }
+
     // POST /videollamada/{id}/estado
     public function actualizarEstadoVideollamada($id, Request $request)
     {

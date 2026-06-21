@@ -16,9 +16,14 @@ class ServicioController extends Controller
         $this->servicioService = $servicioService;
     }
 
-    public function index()
+    public function index(Request $request)
     {
-        return response()->json($this->servicioService->listarTodos());
+        $filtros = $request->only([
+            'q', 'tipo', 'modalidad', 'precio_min', 'precio_max',
+            'lat', 'lng', 'radio_km', 'orden', 'page', 'per_page',
+        ]);
+
+        return response()->json($this->servicioService->listarTodos($filtros));
     }
 
     public function store(Request $request)
