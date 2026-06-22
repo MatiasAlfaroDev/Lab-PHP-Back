@@ -418,7 +418,7 @@ class ReservaController extends Controller
 
         $cliente->notify(new ReservaNotification(
             'Reserva Reprogramada',
-            "Has reprogramada una reserva para para el servicio: {$servicio->nombre} con el profesional: {$profesional->name} ",
+            "Has reprogramado una reserva para para el servicio: {$servicio->nombre} con el profesional: {$profesional->name} ",
             $reserva->fecha, $reserva->hora
         ));
 

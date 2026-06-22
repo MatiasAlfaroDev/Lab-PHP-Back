@@ -38,6 +38,16 @@ class EnviarRecordatoriosReserva extends Command
                 $reserva->fecha . ' ' . $reserva->hora,
                 'America/Montevideo'
             );
+            $this->info("-----");
+            $this->info("RESERVA ID: " . $reserva->id);
+            $this->info("NOW: " . $now);
+            $this->info("INICIO: " . $inicio);
+            $this->info("DESDE: " . $now->copy()->addHours(23));
+            $this->info("HASTA: " . $now->copy()->addHours(25));
+            $this->info("BETWEEN: " . ($inicio->between(
+                $now->copy()->addHours(23),
+                $now->copy()->addHours(25)
+            ) ? 'SI' : 'NO'));
 
             if ($inicio->between($desde, $hasta)) {
 
