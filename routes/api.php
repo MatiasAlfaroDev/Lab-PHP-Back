@@ -30,6 +30,12 @@ Route::post('/auth/login', [UserController::class, 'login']);
 Route::post('/register', [UserController::class, 'register']);
 Route::post('/auth/register', [UserController::class, 'register']);
 
+Route::post('/verify-email', [UserController::class, 'verifyEmail']);
+Route::post('/auth/verify-email', [UserController::class, 'verifyEmail']);
+
+Route::post('/resend-verification-code', [UserController::class, 'resendVerificationCode']);
+Route::post('/auth/resend-verification-code', [UserController::class, 'resendVerificationCode']);
+
 // Servicios (público para el front)
 Route::get('/servicios', [ServicioController::class, 'index']);
 

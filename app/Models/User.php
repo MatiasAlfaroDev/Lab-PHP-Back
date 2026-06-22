@@ -22,17 +22,22 @@ class User extends Authenticatable
         'password',
         'role', // rol seria para 'admin' o 'usuario'
         'activo',
+        'email_verified_at',
+        'email_verification_code',
+        'email_verification_expires_at',
     ];
 
     protected $hidden = [
         'password',
         'remember_token',
+        'email_verification_code',
     ];
 
     protected function casts(): array
     {
         return [
             'email_verified_at' => 'datetime',
+            'email_verification_expires_at' => 'datetime',
             'password' => 'hashed',
             'activo' => 'boolean',
         ];
