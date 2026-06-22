@@ -9,6 +9,7 @@ use App\Models\Servicio;
 use App\Notifications\ReservaNotification;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class EnviarRecordatoriosReserva extends Command
 {
@@ -20,6 +21,8 @@ class EnviarRecordatoriosReserva extends Command
     {
         $now = Carbon::now('America/Montevideo');
 
+        Log::info('Iniciando recordatorios');
+
         // Ventana de 24h con tolerancia
         $desde = $now->copy()->addHours(23);
         $hasta = $now->copy()->addHours(25);
@@ -27,6 +30,11 @@ class EnviarRecordatoriosReserva extends Command
         $reservas = Reserva::whereIn('estado', ['confirmada', 'pagada'])
             ->whereNull('recordatorio_enviado_at')
             ->get();
+
+
+        Log::info('Reservas encontradas', [
+            'cantidad' => $reservas->count()
+        ]);
 
         foreach ($reservas as $reserva) {
 
@@ -49,6 +57,11 @@ class EnviarRecordatoriosReserva extends Command
                 }
 
                 $profesional = User::find($servicio->profesional_id);
+
+                Log::info('Enviando recordatorio', [
+                    'reserva_id' => $reserva->reserva_id,
+                    'cliente_id' => $reserva->cliente_id
+                ]);
 
                 $cliente->notify(
                     new ReservaNotification(
