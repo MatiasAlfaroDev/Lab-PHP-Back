@@ -10,9 +10,22 @@ use Illuminate\Support\Facades\Hash;
 use Laravel\Socialite\Facades\Socialite;
 use Illuminate\Support\Str;
 use App\Notifications\PasswordGeneratedNotification;
+use App\Notifications\EmailVerificationCodeNotification;
 
 class UserService
 {
+    private function generateVerificationCode(User $user)
+    {
+        $code = (string) random_int(100000, 999999);
+
+        $user->update([
+            'email_verification_code' => $code,
+            'email_verification_expires_at' => now()->addMinutes(15),
+        ]);
+
+        $user->notify(new EmailVerificationCodeNotification($code));
+    }
+
     public function register(array $data)
     {
         DB::beginTransaction();
@@ -43,13 +56,11 @@ class UserService
 
             DB::commit();
 
-            // Respuesta para frontend
-           $token = $user->createToken('auth_token')->plainTextToken;
+            $this->generateVerificationCode($user);
 
             return [
                 'success' => true,
-                'message' => 'Usuario creado correctamente',
-                'token' => $token,
+                'message' => 'Usuario creado correctamente. Revisa tu correo para verificar tu cuenta.',
                 'user' => [
                     'id' => $user->id,
                     'name' => $user->name,
@@ -69,9 +80,93 @@ class UserService
         }
     }
 
+    public function verifyEmail(array $data)
+    {
+        $user = User::where('email', $data['email'])->first();
+
+        if (!$user) {
+            return [
+                'success' => false,
+                'message' => 'Usuario no encontrado'
+            ];
+        }
+
+        if ($user->email_verified_at) {
+            return [
+                'success' => false,
+                'message' => 'El correo ya fue verificado'
+            ];
+        }
+
+        if (
+            !$user->email_verification_code ||
+            $user->email_verification_code !== $data['code'] ||
+            !$user->email_verification_expires_at ||
+            $user->email_verification_expires_at->isPast()
+        ) {
+            return [
+                'success' => false,
+                'message' => 'Código de verificación inválido o vencido'
+            ];
+        }
+
+        $user->update([
+            'email_verified_at' => now(),
+            'email_verification_code' => null,
+            'email_verification_expires_at' => null,
+        ]);
+
+        $token = $user->createToken('auth_token')->plainTextToken;
+
+        return [
+            'success' => true,
+            'message' => 'Correo verificado correctamente',
+            'token' => $token,
+            'user' => [
+                'id' => $user->id,
+                'name' => $user->name,
+                'email' => $user->email,
+                'role' => $user->role
+            ]
+        ];
+    }
+
+    public function resendVerificationCode(array $data)
+    {
+        $user = User::where('email', $data['email'])->first();
+
+        if (!$user) {
+            return [
+                'success' => false,
+                'message' => 'Usuario no encontrado'
+            ];
+        }
+
+        if ($user->email_verified_at) {
+            return [
+                'success' => false,
+                'message' => 'El correo ya fue verificado'
+            ];
+        }
+
+        $this->generateVerificationCode($user);
+
+        return [
+            'success' => true,
+            'message' => 'Código de verificación reenviado'
+        ];
+    }
+
     public function login(array $data)
     {
         $user = User::where('email', $data['email'])->first();
+
+        if (!$user || !Hash::check($data['password'], $user->password)) {
+            return [
+                'success' => false,
+                'message' => 'Credenciales inválidas'
+            ];
+        }
 
         if (!$user->activo) {
             return [
@@ -80,10 +175,11 @@ class UserService
             ];
         }
 
-        if (!$user || !Hash::check($data['password'], $user->password)) {
+        if (!$user->email_verified_at) {
             return [
                 'success' => false,
-                'message' => 'Credenciales inválidas'
+                'message' => 'Debes verificar tu correo electrónico antes de iniciar sesión',
+                'email_not_verified' => true
             ];
         }
 
@@ -100,7 +196,7 @@ class UserService
                 'email' => $user->email,
                 'role' => $user->role
             ]
-            
+
         ];
     }
 
@@ -118,6 +214,7 @@ class UserService
                 'email' => $googleUser->email,
                 'role' => $role,
                 'password' => bcrypt($plainPassword),
+                'email_verified_at' => now(),
             ]);
 
             if ($role === 'professional') {

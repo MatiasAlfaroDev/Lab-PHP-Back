@@ -46,6 +46,35 @@ class UserController extends Controller
         return response()->json($result, 201);
     }
 
+    public function verifyEmail(Request $request)
+    {
+        $data = $request->validate([
+            'email' => 'required|email',
+            'code' => 'required|string'
+        ]);
+
+        $response = $this->userService->verifyEmail($data);
+
+        return response()->json(
+            $response,
+            $response['success'] ? 200 : 422
+        );
+    }
+
+    public function resendVerificationCode(Request $request)
+    {
+        $data = $request->validate([
+            'email' => 'required|email'
+        ]);
+
+        $response = $this->userService->resendVerificationCode($data);
+
+        return response()->json(
+            $response,
+            $response['success'] ? 200 : 422
+        );
+    }
+
     public function login(Request $request)
     {
         $data = $request->validate([
