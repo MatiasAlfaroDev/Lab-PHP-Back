@@ -1,59 +1,152 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# CitaPro - Backend (Laravel)
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+## Descripción del sistema
 
-## About Laravel
+CitaPro es una plataforma web para la gestión integral de reservas de servicios profesionales. Permite la conexión entre clientes y profesionales, la administración de servicios, reservas, pagos y notificaciones en tiempo real.
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+El backend está desarrollado en Laravel y funciona como una API REST desacoplada consumida por un frontend en React.
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+---
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+## Objetivo del backend
 
-## Learning Laravel
+El backend tiene como objetivo principal gestionar toda la lógica del sistema:
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework. You can also check out [Laravel Learn](https://laravel.com/learn), where you will be guided through building a modern Laravel application.
+- Gestión de usuarios con roles (cliente, profesional, administrador)
+- Administración de servicios y disponibilidad
+- Gestión del ciclo de vida de las reservas
+- Control de pagos
+- Envío de notificaciones automáticas y en tiempo real
+- Integración con servicios externos
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+---
 
-## Laravel Sponsors
+## Arquitectura
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
+El backend está desarrollado como una API REST utilizando Laravel y sigue una arquitectura en capas:
 
-### Premium Partners
+Controllers: exponen los endpoints de la API y manejan las solicitudes HTTP.
+Services: contienen la lógica de negocio del sistema.
+Models: representan las entidades del dominio y gestionan la base de datos mediante Eloquent.
+Notifications: gestionan el envío de notificaciones por correo y eventos en tiempo real.
+Console: contiene tareas programadas (scheduler).
+Routes: definen los endpoints de la API.
 
-- **[Vehikl](https://vehikl.com)**
-- **[Tighten Co.](https://tighten.co)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Redberry](https://redberry.international/laravel-development)**
-- **[Active Logic](https://activelogic.com)**
+---
 
-## Contributing
+## Módulos del sistema
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+### Usuarios
+Gestión de registro, autenticación, edición de perfil y roles (cliente, profesional, administrador).
 
-## Code of Conduct
+### Servicios
+Creación, modificación y eliminación de servicios ofrecidos por los profesionales. Configuración de duración, precio, modalidad y ubicación.
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+### Reservas
+Creación, confirmación, cancelación y reprogramación de reservas. Control de estados y validación de disponibilidad.
 
-## Security Vulnerabilities
+### Paquetes
+Compra de paquetes de servicios y control de sesiones disponibles por servicio.
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+### Pagos
+Registro de pagos mediante PayPal Sandbox y pagos presenciales.
 
-## License
+### Notificaciones
+Notificaciones por correo y en tiempo real utilizando Laravel Reverb (WebSockets).
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+### Videollamadas
+Integración con LiveKit para servicios virtuales.
+
+### Calificaciones
+Sistema de puntuación y comentarios de servicios.
+
+---
+
+## Tecnologías utilizadas
+
+PHP 8.x, Laravel, PostgreSQL, Laravel Reverb, PayPal Sandbox, LiveKit, Google OAuth, SMTP, GitHub Actions.
+
+---
+
+## Configuración del entorno
+
+Para ejecutar correctamente la aplicación es necesario contar con un archivo `.env`
+configurado con las credenciales y parámetros requeridos por el sistema.
+
+El archivo `.env` utilizado para la evaluación se entrega junto con el proyecto.
+
+---
+
+## Instalación
+
+Instalar dependencias:
+
+```bash
+composer install
+```
+
+Generar la clave de la aplicación:
+
+```bash
+php artisan key:generate
+```
+
+Generar migraciones:
+```bash
+php artisan migrate
+```
+---
+
+## Ejecución del sistema
+
+Para ejecutar el backend:
+
+```bash
+php artisan serve
+```
+
+Para WebSockets (notificaciones en tiempo real):
+
+```bash
+php artisan reverb:start
+```
+
+Para tareas automáticas y recordatorios programados:
+
+```bash
+php artisan schedule:work
+```
+
+---
+
+## Usuario administrador de prueba
+
+Email: admin@citapro.com  
+Contraseña: Admin1234
+
+Este usuario permite acceder a todas las funcionalidades de administración del sistema.
+
+---
+
+## Despliegue
+
+Backend desplegado en Railway.  
+Frontend desplegado en Vercel.  
+Base de datos PostgreSQL en la nube.
+
+---
+
+## Integración continua
+
+Se utiliza GitHub Actions para pruebas automáticas y despliegue continuo del sistema.
+
+---
+
+## Integrantes
+
+Juliana Méndez  
+Cecilia Méndez  
+Matías Alfaro  
+Martina Castro  
+
+Curso: Laboratorio PHP 2026
