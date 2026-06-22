@@ -83,10 +83,16 @@ class PagoService
     // RESERVAS - CAPTURAR PAYPAL
     public function capturarReservaPaypal($orderId)
     {
-        $pago = Pago::where(
-            'paypal_order_id',
-            $orderId
-        )->firstOrFail();
+        $frontendUrl = config('app.frontend_url');
+
+        try {
+            $pago = Pago::where(
+                'paypal_order_id',
+                $orderId
+            )->firstOrFail();
+        } catch (\Throwable $e) {
+            return redirect($frontendUrl . '/client/reservas?pago=error&message=' . urlencode('Orden de pago no encontrada'));
+        }
 
         $paypal = $this->paypal();
 
@@ -100,10 +106,7 @@ class PagoService
                 'estado' => 'fallido'
             ]);
 
-            return response()->json([
-                'success' => false,
-                'message' => 'Pago fallido'
-            ], 400);
+            return redirect($frontendUrl . '/client/reservas?pago=error&message=' . urlencode('Pago fallido'));
         }
 
         $captureId =
@@ -130,9 +133,7 @@ class PagoService
             ]);
         });
 
-        return response()->json([
-            'success' => true
-        ]);
+        return redirect($frontendUrl . '/client/reservas?pago=exito');
     }
 
     // RESERVAS - SDK
@@ -307,10 +308,16 @@ class PagoService
     // PAQUETES - CAPTURAR PAYPAL
     public function capturarPaquetePaypal($orderId)
     {
-        $pago = Pago::where(
-            'paypal_order_id',
-            $orderId
-        )->firstOrFail();
+        $frontendUrl = config('app.frontend_url');
+
+        try {
+            $pago = Pago::where(
+                'paypal_order_id',
+                $orderId
+            )->firstOrFail();
+        } catch (\Throwable $e) {
+            return redirect($frontendUrl . '/client/packages?pago=error&message=' . urlencode('Orden de pago no encontrada'));
+        }
 
         $paypal = $this->paypal();
 
@@ -324,9 +331,7 @@ class PagoService
                 'estado' => 'fallido'
             ]);
 
-            return response()->json([
-                'success' => false
-            ], 400);
+            return redirect($frontendUrl . '/client/packages?pago=error&message=' . urlencode('Pago fallido'));
         }
 
         $captureId =
@@ -340,24 +345,28 @@ class PagoService
             'fecha' => now()->toDateString(),
         ]);
 
-        return response()->json([
-            'success' => true
-        ]);
+        return redirect($frontendUrl . '/client/packages?pago=exito');
     }
 
     // CANCELAR PAYPAL
     public function cancelarPaypal($orderId)
     {
+        $frontendUrl = config('app.frontend_url');
+        $redirectPath = '/client/reservas';
+
         if ($orderId) {
-            Pago::where(
+            $pago = Pago::where(
                 'paypal_order_id',
                 $orderId
-            )->update(['estado' => 'cancelado']);
+            )->first();
+
+            if ($pago) {
+                $pago->update(['estado' => 'cancelado']);
+                $redirectPath = $pago->compra_paquete_id ? '/client/packages' : '/client/reservas';
+            }
         }
 
-        return response()->json([
-            'message' => 'Pago cancelado'
-        ]);
+        return redirect($frontendUrl . $redirectPath . '?pago=cancelado');
     }
 
    public function confirmarPagoPresencial($user, $reserva_id)
