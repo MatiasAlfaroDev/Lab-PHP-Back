@@ -7,6 +7,7 @@ use Illuminate\Auth\AuthenticationException;
 use Illuminate\Database\QueryException;
 use Illuminate\Http\Request;
 use Illuminate\Console\Scheduling\Schedule;
+use Illuminate\Support\Facades\Artisan;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -28,14 +29,12 @@ return Application::configure(basePath: dirname(__DIR__))
         });
     })
     ->withSchedule(function (Schedule $schedule) {
-        // El contenedor del cron es efimero (sin volumen), por lo que el output
-        // se manda a /dev/stdout para que quede capturado en los logs de Railway
-        // en vez de perderse en un archivo que desaparece al terminar el contenedor.
-        $schedule->command('reservas:en-curso')
-            ->everyMinute()
-            ->appendOutputTo('/dev/stdout');
-        $schedule->command('reservas:recordatorios')
-            ->everyMinute()
-            ->appendOutputTo('/dev/stdout');
+        // Se ejecutan in-process (Schedule::call + Artisan::call) en vez de
+        // ->command(), que lanza un subproceso aparte: el Log:: interno de un
+        // subproceso queda atrapado en el pipe de Symfony Process y nunca llega
+        // a los logs de Railway. In-process, el Log:: usa el stderr real del
+        // contenedor del scheduler, que si queda capturado.
+        $schedule->call(fn () => Artisan::call('reservas:en-curso'))->everyMinute();
+        $schedule->call(fn () => Artisan::call('reservas:recordatorios'))->everyMinute();
     })
     ->create();
