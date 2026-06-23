@@ -28,7 +28,14 @@ return Application::configure(basePath: dirname(__DIR__))
         });
     })
     ->withSchedule(function (Schedule $schedule) {
-        $schedule->command('reservas:en-curso')->everyMinute();
-        $schedule->command('reservas:recordatorios')->everyMinute();
+        // El contenedor del cron es efimero (sin volumen), por lo que el output
+        // se manda a /dev/stdout para que quede capturado en los logs de Railway
+        // en vez de perderse en un archivo que desaparece al terminar el contenedor.
+        $schedule->command('reservas:en-curso')
+            ->everyMinute()
+            ->appendOutputTo('/dev/stdout');
+        $schedule->command('reservas:recordatorios')
+            ->everyMinute()
+            ->appendOutputTo('/dev/stdout');
     })
     ->create();
