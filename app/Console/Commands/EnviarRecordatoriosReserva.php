@@ -63,23 +63,31 @@ class EnviarRecordatoriosReserva extends Command
                     'cliente_id' => $reserva->cliente_id
                 ]);
 
-                $cliente->notify(
-                    new ReservaNotification(
-                        'Recordatorio de Reserva',
-                        "Te recordamos que tienes una reserva para el servicio: {$servicio->nombre}" .
-                        ($profesional ? " con el profesional: {$profesional->name}" : ""),
-                        $reserva->fecha,
-                        $reserva->hora
-                    )
-                );
+                try {
+                    $cliente->notify(
+                        new ReservaNotification(
+                            'Recordatorio de Reserva',
+                            "Te recordamos que tienes una reserva para el servicio: {$servicio->nombre}" .
+                            ($profesional ? " con el profesional: {$profesional->name}" : ""),
+                            $reserva->fecha,
+                            $reserva->hora
+                        )
+                    );
 
-                DB::table('reservas')
-                    ->where('reserva_id', $reserva->reserva_id)
-                    ->update([
-                        'recordatorio_enviado_at' => now()
+                    DB::table('reservas')
+                        ->where('reserva_id', $reserva->reserva_id)
+                        ->update([
+                            'recordatorio_enviado_at' => now()
+                        ]);
+
+                    $this->info("Enviado recordatorio reserva {$reserva->reserva_id}");
+                } catch (\Throwable $e) {
+                    Log::error('Fallo al enviar recordatorio', [
+                        'reserva_id' => $reserva->reserva_id,
+                        'cliente_id' => $reserva->cliente_id,
+                        'error' => $e->getMessage(),
                     ]);
-
-                $this->info("Enviado recordatorio reserva {$reserva->reserva_id}");
+                }
             }
         }
 
