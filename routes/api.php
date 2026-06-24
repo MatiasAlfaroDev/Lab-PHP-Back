@@ -1,6 +1,8 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\Artisan;
+use Illuminate\Http\Request;
 
 use App\Http\Controllers\Api\UserController;
 use App\Http\Controllers\Api\ServicioController;
@@ -164,4 +166,24 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/notificaciones/leer-todas', [NotificationController::class, 'leerTodas']);
 });
 
+});
+
+/*
+|--------------------------------------------------------------------------
+| Cron interno (llamado por el scheduler de Railway, no por usuarios)
+|--------------------------------------------------------------------------
+*/
+Route::post('/internal/recordatorios', function (Request $request) {
+    $secret = config('app.cron_secret');
+
+    if (!$secret || $request->header('X-Cron-Secret') !== $secret) {
+        abort(403);
+    }
+
+    $exitCode = Artisan::call('reservas:recordatorios');
+
+    return response()->json([
+        'exit_code' => $exitCode,
+        'output' => Artisan::output(),
+    ]);
 });

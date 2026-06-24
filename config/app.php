@@ -17,6 +17,18 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Cron Secret
+    |--------------------------------------------------------------------------
+    |
+    | Compartido con el servicio que dispara los endpoints internos de cron
+    | (ej. el scheduler de Railway llamando a este API en Vercel).
+    |
+    */
+
+    'cron_secret' => env('CRON_SECRET'),
+
+    /*
+    |--------------------------------------------------------------------------
     | Application Environment
     |--------------------------------------------------------------------------
     |
