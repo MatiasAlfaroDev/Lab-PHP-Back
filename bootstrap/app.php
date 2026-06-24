@@ -8,6 +8,8 @@ use Illuminate\Database\QueryException;
 use Illuminate\Http\Request;
 use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -29,12 +31,35 @@ return Application::configure(basePath: dirname(__DIR__))
         });
     })
     ->withSchedule(function (Schedule $schedule) {
-        // Se ejecutan in-process (Schedule::call + Artisan::call) en vez de
+        // Se ejecuta in-process (Schedule::call + Artisan::call) en vez de
         // ->command(), que lanza un subproceso aparte: el Log:: interno de un
         // subproceso queda atrapado en el pipe de Symfony Process y nunca llega
         // a los logs de Railway. In-process, el Log:: usa el stderr real del
         // contenedor del scheduler, que si queda capturado.
         $schedule->call(fn () => Artisan::call('reservas:en-curso'))->everyMinute();
-        $schedule->call(fn () => Artisan::call('reservas:recordatorios'))->everyMinute();
+
+        // reservas:recordatorios NO corre aca: Railway bloquea conexiones
+        // salientes a puertos SMTP (confirmado con Gmail en 587 y 465, tanto
+        // en Cron Job como en Service persistente). En vez de eso, Railway
+        // solo dispara el endpoint protegido en Vercel, cuya red si llega a
+        // Gmail, y el envio real ocurre ahi.
+        $schedule->call(function () {
+            $url = env('RECORDATORIOS_ENDPOINT', 'https://lab-php-back.vercel.app/api/internal/recordatorios');
+
+            try {
+                $response = Http::timeout(30)
+                    ->withHeaders(['X-Cron-Secret' => env('CRON_SECRET')])
+                    ->post($url);
+
+                Log::info('Recordatorios disparados via Vercel', [
+                    'status' => $response->status(),
+                    'body' => $response->body(),
+                ]);
+            } catch (\Throwable $e) {
+                Log::error('Fallo al disparar recordatorios via Vercel', [
+                    'error' => $e->getMessage(),
+                ]);
+            }
+        })->everyMinute();
     })
     ->create();
