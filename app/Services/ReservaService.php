@@ -240,6 +240,7 @@ class ReservaService
                 ->where('hora', $hora)
                 ->where('reserva_id', '!=', $reserva->reserva_id)
                 ->whereNotIn('estado', ['cancelada'])
+                ->lockForUpdate()
                 ->exists();
 
             if ($ocupado) {
