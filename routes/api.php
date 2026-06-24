@@ -187,3 +187,34 @@ Route::post('/internal/recordatorios', function (Request $request) {
         'output' => Artisan::output(),
     ]);
 });
+
+// Diagnostico temporal: prueba conectividad TCP cruda a smtp.gmail.com
+// desde la red de Vercel, sin depender de que haya una reserva en ventana.
+Route::get('/internal/test-smtp', function (Request $request) {
+    $secret = config('app.cron_secret');
+
+    if (!$secret || $request->header('X-Cron-Secret') !== $secret) {
+        abort(403);
+    }
+
+    $resultados = [];
+    foreach ([587, 465] as $port) {
+        $inicio = microtime(true);
+        $conn = @stream_socket_client(
+            "tcp://smtp.gmail.com:{$port}",
+            $errno,
+            $errstr,
+            8
+        );
+        $resultados[$port] = [
+            'ok' => (bool) $conn,
+            'error' => $conn ? null : $errstr,
+            'ms' => round((microtime(true) - $inicio) * 1000),
+        ];
+        if ($conn) {
+            fclose($conn);
+        }
+    }
+
+    return response()->json($resultados);
+});
