@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Events\CatalogoActualizado;
 use App\Models\Servicio;
 use App\Models\Profesional;
 use App\Models\Reserva;
@@ -169,6 +170,8 @@ class ServicioService
             'longitud'       => $ubicacion['longitud'],
         ]);
 
+        event(new CatalogoActualizado('servicio', 'creado', $profesional->user_id, $servicio->servicio_id));
+
         return [
             'success' => true,
             'message' => 'Servicio creado correctamente',
@@ -212,6 +215,8 @@ class ServicioService
             'latitud'         => $ubicacion['latitud'],
             'longitud'        => $ubicacion['longitud'],
         ]);
+
+        event(new CatalogoActualizado('servicio', 'actualizado', $servicio->profesional_id, $servicio->servicio_id));
 
         return ['success' => true, 'message' => 'Servicio actualizado', 'data' => $servicio->fresh()];
     }
@@ -258,6 +263,8 @@ class ServicioService
         ->update([
             'eliminado' => DB::raw('true')
         ]);
+
+        event(new CatalogoActualizado('servicio', 'eliminado', $servicio->profesional_id, $servicio->servicio_id));
 
         return [
             'success' => true,
