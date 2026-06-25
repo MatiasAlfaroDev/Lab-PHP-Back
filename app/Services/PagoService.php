@@ -397,12 +397,18 @@ class PagoService
 
                 if ($pago->reserva_id) {
                     $reservaCancelada = Reserva::with('servicio')->find($pago->reserva_id);
+
                     if ($reservaCancelada) {
+
+                        $reservaCancelada->update([
+                            'estado' => 'cancelada'
+                        ]);
+
                         $this->notificarPago(
                             $reservaCancelada,
                             'Pago Cancelado',
-                            "Tu pago para el servicio: {$reservaCancelada->servicio->nombre} fue cancelado",
-                            "El pago para el servicio: {$reservaCancelada->servicio->nombre} fue cancelado"
+                            "Tu pago para el servicio: {$reservaCancelada->servicio->nombre} fue cancelado. La reserva fue cancelada.",
+                            "El pago para el servicio: {$reservaCancelada->servicio->nombre} fue cancelado. La reserva fue cancelada."
                         );
                     }
                 } elseif ($pago->compra_paquete_id) {
