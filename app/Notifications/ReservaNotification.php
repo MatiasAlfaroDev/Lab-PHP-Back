@@ -6,6 +6,7 @@ use Illuminate\Bus\Queueable;
 use Illuminate\Notifications\Notification;
 use Illuminate\Notifications\Messages\BroadcastMessage;
 use Illuminate\Notifications\Messages\MailMessage;
+use App\Notifications\Channels\WebPushChannel;
 
 
 class ReservaNotification extends Notification
@@ -22,7 +23,17 @@ class ReservaNotification extends Notification
     public function via($notifiable)
     {
 
-        return ['database', 'broadcast', 'mail'];
+        return ['database', 'broadcast', 'mail', WebPushChannel::class];
+    }
+
+    public function toPush($notifiable)
+    {
+        return [
+            'title' => $this->type,
+            'body' => $this->message,
+            'fecha' => $this->fecha,
+            'hora' => $this->hora,
+        ];
     }
 
     public function toDatabase($notifiable)

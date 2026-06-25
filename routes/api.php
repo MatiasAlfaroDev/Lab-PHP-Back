@@ -19,6 +19,7 @@ use App\Http\Controllers\Api\NotificationController;
 use App\Http\Controllers\Api\ExcepcionController;
 use App\Http\Controllers\Api\CalificacionController;
 use App\Http\Controllers\Api\AdminController;
+use App\Http\Controllers\Api\PushSubscriptionController;
 
 /*
 |--------------------------------------------------------------------------
@@ -164,6 +165,9 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/notificaciones/no-leidas', [NotificationController::class, 'noLeidas']);
     Route::post('/notificaciones/{id}/leer', [NotificationController::class, 'leer']);
     Route::post('/notificaciones/leer-todas', [NotificationController::class, 'leerTodas']);
+
+    Route::post('/push/subscribe', [PushSubscriptionController::class, 'store']);
+    Route::delete('/push/subscribe', [PushSubscriptionController::class, 'destroy']);
 });
 
 });

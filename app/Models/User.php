@@ -25,12 +25,14 @@ class User extends Authenticatable
         'email_verified_at',
         'email_verification_code',
         'email_verification_expires_at',
+        'push_subscription',
     ];
 
     protected $hidden = [
         'password',
         'remember_token',
         'email_verification_code',
+        'push_subscription',
     ];
 
     protected function casts(): array
@@ -40,6 +42,7 @@ class User extends Authenticatable
             'email_verification_expires_at' => 'datetime',
             'password' => 'hashed',
             'activo' => 'boolean',
+            'push_subscription' => 'array',
         ];
     }
 

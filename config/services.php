@@ -42,4 +42,10 @@ return [
         'maps_api_key'  => env('GOOGLE_MAPS_API_KEY'),
     ],
 
+    'webpush' => [
+        'public_key'  => env('VAPID_PUBLIC_KEY'),
+        'private_key' => env('VAPID_PRIVATE_KEY'),
+        'subject'     => env('VAPID_SUBJECT', 'mailto:soporte@citapro.com'),
+    ],
+
 ];
