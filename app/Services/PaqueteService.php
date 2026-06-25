@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Events\CatalogoActualizado;
 use App\Models\Paquete;
 use App\Models\Servicio;
 use App\Models\Profesional;
@@ -57,6 +58,8 @@ class PaqueteService
             }
 
             DB::commit();
+
+            event(new CatalogoActualizado('paquete', 'creado', $user->id, $paquete->paquete_id));
 
             return [
                 'success' => true,
@@ -172,6 +175,8 @@ class PaqueteService
 
             DB::commit();
 
+            event(new CatalogoActualizado('paquete', 'actualizado', $user->id, (int) $id));
+
             return [
                 'success' => true,
                 'message' => 'Paquete actualizado'
@@ -242,6 +247,8 @@ class PaqueteService
         ->update([
             'eliminado' => DB::raw('true')
         ]);
+
+        event(new CatalogoActualizado('paquete', 'eliminado', $user->id, (int) $id));
 
         return [
             'success' => true,
