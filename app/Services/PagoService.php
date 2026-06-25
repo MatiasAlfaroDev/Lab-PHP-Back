@@ -5,6 +5,8 @@ namespace App\Services;
 use App\Models\Pago;
 use App\Models\Reserva;
 use App\Models\CompraPaquete;
+use App\Models\User;
+use App\Notifications\ReservaNotification;
 use Illuminate\Support\Facades\DB;
 use Srmklive\PayPal\Services\PayPal as PayPalClient;
 use Carbon\Carbon;
@@ -133,6 +135,16 @@ class PagoService
             ]);
         });
 
+        $reservaActualizada = Reserva::with('servicio')->find($pago->reserva_id);
+        if ($reservaActualizada) {
+            $this->notificarPago(
+                $reservaActualizada,
+                'Pago Aprobado',
+                "Tu pago para el servicio: {$reservaActualizada->servicio->nombre} fue aprobado",
+                "Se aprobó el pago de la reserva para el servicio: {$reservaActualizada->servicio->nombre}"
+            );
+        }
+
         return redirect($frontendUrl . '/client/reservas?pago=exito');
     }
 
@@ -186,6 +198,16 @@ class PagoService
                 'estado' => 'pagada'
             ]);
         });
+
+        $reservaActualizada = Reserva::with('servicio')->find($pago->reserva_id);
+        if ($reservaActualizada) {
+            $this->notificarPago(
+                $reservaActualizada,
+                'Pago Aprobado',
+                "Tu pago para el servicio: {$reservaActualizada->servicio->nombre} fue aprobado",
+                "Se aprobó el pago de la reserva para el servicio: {$reservaActualizada->servicio->nombre}"
+            );
+        }
 
         return response()->json([
             'success' => true
@@ -345,6 +367,16 @@ class PagoService
             'fecha' => now()->toDateString(),
         ]);
 
+        $compraActualizada = CompraPaquete::with('paquete')->find($pago->compra_paquete_id);
+        if ($compraActualizada) {
+            $this->notificarPagoPaquete(
+                $compraActualizada,
+                'Pago de Paquete Aprobado',
+                "Tu pago para el paquete: {$compraActualizada->paquete->nombre} fue aprobado",
+                "Se vendió el paquete: {$compraActualizada->paquete->nombre}"
+            );
+        }
+
         return redirect($frontendUrl . '/client/packages?pago=exito');
     }
 
@@ -362,6 +394,28 @@ class PagoService
 
             if ($pago) {
                 $pago->update(['estado' => 'cancelado']);
+
+                if ($pago->reserva_id) {
+                    $reservaCancelada = Reserva::with('servicio')->find($pago->reserva_id);
+                    if ($reservaCancelada) {
+                        $this->notificarPago(
+                            $reservaCancelada,
+                            'Pago Cancelado',
+                            "Tu pago para el servicio: {$reservaCancelada->servicio->nombre} fue cancelado",
+                            "El pago para el servicio: {$reservaCancelada->servicio->nombre} fue cancelado"
+                        );
+                    }
+                } elseif ($pago->compra_paquete_id) {
+                    $compraCancelada = CompraPaquete::with('paquete')->find($pago->compra_paquete_id);
+                    if ($compraCancelada) {
+                        $this->notificarPagoPaquete(
+                            $compraCancelada,
+                            'Pago Cancelado',
+                            "Tu pago para el paquete: {$compraCancelada->paquete->nombre} fue cancelado"
+                        );
+                    }
+                }
+
                 $redirectPath = $pago->compra_paquete_id ? '/client/packages' : '/client/reservas';
             }
         }
@@ -371,7 +425,7 @@ class PagoService
 
    public function confirmarPagoPresencial($user, $reserva_id)
     {
-        $reserva = Reserva::with('pago')->findOrFail($reserva_id);
+        $reserva = Reserva::with('pago', 'servicio')->findOrFail($reserva_id);
 
         if (!$reserva->pago) {
             return [
@@ -385,6 +439,13 @@ class PagoService
             'estado' => 'aprobado',
             'fecha' => now()->toDateString(),
         ]);
+
+        $this->notificarPago(
+            $reserva,
+            'Pago Registrado',
+            "Tu pago para el servicio: {$reserva->servicio->nombre} fue registrado por el profesional",
+            "Registraste el pago presencial para el servicio: {$reserva->servicio->nombre}"
+        );
 
         return [
             'success' => true,
@@ -433,5 +494,40 @@ class PagoService
             'pagado' => (float) $pagos->where('estado', 'aprobado')->sum('monto'),
             'pendiente' => (float) $pagos->where('estado', 'pendiente')->sum('monto'),
         ];
+    }
+
+    private function notificarPago(Reserva $reserva, string $tipo, string $mensajeCliente, string $mensajeProfesional): void
+    {
+        if (!$reserva->relationLoaded('servicio')) {
+            $reserva->load('servicio');
+        }
+
+        if (!$reserva->servicio) {
+            return;
+        }
+
+        $cliente = User::find($reserva->cliente_id);
+        $profesional = User::find($reserva->servicio->profesional_id);
+
+        $cliente?->notify(new ReservaNotification($tipo, $mensajeCliente, $reserva->fecha, $reserva->hora));
+        $profesional?->notify(new ReservaNotification($tipo, $mensajeProfesional, $reserva->fecha, $reserva->hora));
+    }
+
+    private function notificarPagoPaquete(CompraPaquete $compra, string $tipo, string $mensajeCliente, ?string $mensajeProfesional = null): void
+    {
+        if (!$compra->relationLoaded('paquete')) {
+            $compra->load('paquete');
+        }
+
+        $cliente = User::find($compra->cliente_id);
+        $fecha = now()->toDateString();
+        $hora = now()->format('H:i:s');
+
+        $cliente?->notify(new ReservaNotification($tipo, $mensajeCliente, $fecha, $hora));
+
+        if ($mensajeProfesional !== null) {
+            $profesional = $compra->paquete?->profesional?->user;
+            $profesional?->notify(new ReservaNotification($tipo, $mensajeProfesional, $fecha, $hora));
+        }
     }
 }
